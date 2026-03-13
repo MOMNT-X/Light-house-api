@@ -1,0 +1,442 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAYMENT_PENDING
+  CONFIRMED
+  PREPARING
+  READY_FOR_DISPATCH
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  DISCORD
+}
+
+enum NotificationTargetType {
+  USER
+  VENDOR
+  ADMIN
+}
+
+enum AvailabilityState {
+  AVAILABLE
+  SOLD_OUT
+  SCHEDULED // only available during specific hours
+}
+
+// ─────────────────────────────────────────────────
+// USER & AUTH
+// ─────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  phone          String?   @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           Role      @default(CUSTOMER)
+  emailVerified  Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  avatarUrl      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime? // soft delete
+
+  sessions       UserSession[]
+  addresses      Address[]
+  cartItems      CartItem[]
+  orders         Order[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+  @@index([deletedAt])
+}
+
+model UserSession {
+  id               String    @id @default(uuid())
+  userId           String
+  refreshTokenHash String
+  deviceInfo       String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────────
+// ADDRESS
+// ─────────────────────────────────────────────────
+
+model Address {
+  id                   String   @id @default(uuid())
+  userId               String
+  label                String   // "Home", "Office", "Other"
+  street               String
+  city                 String
+  state                String
+  landmark             String?
+  deliveryInstructions String?  // "Gate is blue, call on arrival"
+  latitude             Decimal? @db.Decimal(10, 7)
+  longitude            Decimal? @db.Decimal(10, 7)
+  isDefault            Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders               Order[]
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────
+// VENDOR
+// ─────────────────────────────────────────────────
+
+model Vendor {
+  id              String    @id @default(uuid())
+  name            String
+  slug            String    @unique
+  description     String
+  logoUrl         String?
+  bannerUrl       String?
+  category        String
+  isActive        Boolean   @default(true)
+  isOpen          Boolean   @default(false)
+  rating          Decimal   @default(0) @db.Decimal(3, 2)
+  totalReviews    Int       @default(0)
+  deliveryFee     Int       @default(0)    // kobo
+  minOrder        Int       @default(0)    // kobo
+  serviceCharge   Int       @default(0)    // kobo flat, or use serviceChargePercent
+  serviceChargePercent Decimal @default(0) @db.Decimal(5, 2)
+  // Delivery zone
+  deliveryRadius  Decimal?  @db.Decimal(8, 2) // km
+  latitude        Decimal?  @db.Decimal(10, 7)
+  longitude       Decimal?  @db.Decimal(10, 7)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // soft delete
+
+  hours           VendorHours[]
+  menuCategories  MenuCategory[]
+  orders          Order[]
+  promos          PromoCode[]
+
+  @@index([slug])
+  @@index([isActive, isOpen])
+  @@index([deletedAt])
+}
+
+model VendorHours {
+  id        String  @id @default(uuid())
+  vendorId  String
+  dayOfWeek Int     // 0=Sun ... 6=Sat
+  openTime  String  // "08:00"
+  closeTime String  // "22:00"
+  isClosed  Boolean @default(false)
+
+  vendor    Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+// ─────────────────────────────────────────────────
+// MENU
+// ─────────────────────────────────────────────────
+
+model MenuCategory {
+  id        String     @id @default(uuid())
+  vendorId  String
+  name      String
+  sortOrder Int        @default(0)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  vendor    Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items     MenuItem[]
+
+  @@index([vendorId])
+}
+
+model MenuItem {
+  id               String            @id @default(uuid())
+  categoryId       String
+  name             String
+  description      String
+  price            Int               // kobo
+  imageUrl         String?
+  availability     AvailabilityState @default(AVAILABLE)
+  isActive         Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  // Scheduled availability
+  availableFrom    String?           // "11:00" — null means always
+  availableTo      String?           // "22:00"
+  prepTimeMinutes  Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?         // soft delete
+
+  category         MenuCategory      @relation(fields: [categoryId], references: [id])
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+
+  @@index([categoryId])
+  @@index([availability])
+  @@index([deletedAt])
+}
+
+// ─────────────────────────────────────────────────
+// CART
+// ─────────────────────────────────────────────────
+
+model CartItem {
+  id         String   @id @default(uuid())
+  userId     String
+  vendorId   String
+  menuItemId String
+  quantity   Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  // Prevent duplicates — upsert by this constraint
+  @@unique([userId, vendorId, menuItemId])
+  @@index([userId])
+  @@index([vendorId])
+}
+
+// ─────────────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────────────
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String
+  vendorId        String
+  addressId       String
+  status          OrderStatus @default(PENDING)
+  // Pricing snapshot
+  subtotal        Int         // kobo — sum of items
+  deliveryFee     Int         // kobo — snapshot at order time
+  serviceCharge   Int         @default(0)
+  discount        Int         @default(0)
+  promoCode       String?
+  total           Int         // kobo — final charged amount
+  notes           String?
+  // Idempotency
+  idempotencyKey  String      @unique
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id])
+  vendor          Vendor      @relation(fields: [vendorId], references: [id])
+  address         Address     @relation(fields: [addressId], references: [id])
+  items           OrderItem[]
+  payment         Payment?
+  statusHistory   OrderStatusHistory[]
+  notifications   Notification[]
+
+  @@index([userId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  orderId      String
+  menuItemId   String
+  // SNAPSHOT — price locked at purchase time, never changes
+  name         String
+  price        Int      // kobo at time of order
+  quantity     Int
+  subtotal     Int      // price * quantity
+
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(uuid())
+  orderId   String
+  status    OrderStatus
+  notes     String?
+  createdBy String?     // userId of who triggered the change
+  createdAt DateTime    @default(now())
+
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ─────────────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────────────
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique
+  amount          Int           // kobo
+  currency        String        @default("NGN")
+  provider        String        @default("opay")
+  providerRef     String?       @unique // OPay order/reference number
+  status          PaymentStatus @default(PENDING)
+  idempotencyKey  String        @unique
+  paidAt          DateTime?
+  failureReason   String?
+  rawCallbackPayload Json?      // store OPay callback for audit
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order           Order         @relation(fields: [orderId], references: [id])
+  attempts        PaymentAttempt[]
+
+  @@index([providerRef])
+  @@index([status])
+}
+
+model PaymentAttempt {
+  id          String   @id @default(uuid())
+  paymentId   String
+  rawPayload  Json
+  status      String
+  createdAt   DateTime @default(now())
+
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+}
+
+// ─────────────────────────────────────────────────
+// PROMO CODES
+// ─────────────────────────────────────────────────
+
+model PromoCode {
+  id              String    @id @default(uuid())
+  vendorId        String?   // null = platform-wide
+  code            String    @unique
+  description     String?
+  discountType    String    // "FLAT" | "PERCENT"
+  discountValue   Int       // kobo for FLAT, basis points for PERCENT
+  minOrderAmount  Int       @default(0)
+  maxUses         Int?
+  usedCount       Int       @default(0)
+  validFrom       DateTime
+  validTo         DateTime
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  vendor          Vendor?   @relation(fields: [vendorId], references: [id])
+
+  @@index([code])
+  @@index([vendorId])
+}
+
+// ─────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────
+
+model Notification {
+  id           String                  @id @default(uuid())
+  // Target — one of these will be set
+  userId       String?
+  vendorId     String?
+  targetType   NotificationTargetType  @default(USER)
+  orderId      String?
+  type         String   // "ORDER_PLACED" | "PAYMENT_CONFIRMED" | "ORDER_READY" etc.
+  channel      NotificationChannel     @default(IN_APP)
+  title        String
+  body         String
+  isRead       Boolean  @default(false)
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User?    @relation(fields: [userId], references: [id])
+  order        Order?   @relation(fields: [orderId], references: [id])
+
+  @@index([userId])
+  @@index([vendorId])
+  @@index([orderId])
+  @@index([isRead])
+}
+
+// ─────────────────────────────────────────────────
+// WEBHOOKS & AUDIT
+// ─────────────────────────────────────────────────
+
+model WebhookEvent {
+  id           String    @id @default(uuid())
+  provider     String
+  eventType    String
+  rawPayload   Json
+  status       String    @default("received") // "received" | "processed" | "failed"
+  retries      Int       @default(0)
+  processedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+
+  @@index([provider, status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String    @id @default(uuid())
+  userId    String?
+  action    String    // "CREATE" | "UPDATE" | "DELETE" | "LOGIN" etc.
+  entity    String    // "Order" | "Payment" | "Vendor"
+  entityId  String
+  before    Json?
+  after     Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
