@@ -2,7 +2,8 @@
 // Learn more: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -158,6 +159,7 @@ model Vendor {
   menuCategories  MenuCategory[]
   orders          Order[]
   promos          PromoCode[]
+  cartItems       CartItem[]
 
   @@index([slug])
   @@index([isActive, isOpen])
@@ -237,6 +239,7 @@ model CartItem {
   updatedAt  DateTime @updatedAt
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
 
   // Prevent duplicates — upsert by this constraint

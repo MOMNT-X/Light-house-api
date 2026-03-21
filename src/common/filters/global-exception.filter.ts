@@ -12,10 +12,10 @@ import { AbstractHttpAdapter, HttpAdapterHost } from '@nestjs/core';
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
-  constructor(private readonly httpAdapterHost: AbstractHttpAdapter) {}
-
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
@@ -44,9 +44,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message,
       ...(errors ? { errors } : {}),
       timestamp: new Date().toISOString(),
-      path: ctx.getRequest().url,
+      path: request.url,
     };
 
-    this.httpAdapterHost.reply(ctx.getResponse(), responseBody, status);
+    if (response.headersSent) {
+      return;
+    }
+
+    response.status(status).json(responseBody);
   }
 }

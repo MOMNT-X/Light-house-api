@@ -8,7 +8,7 @@ export class MenuService {
 
   async findAllByVendor(vendorId: string): Promise<any[]> {
     return this.prisma.menuItem.findMany({
-      where: { vendorId, deletedAt: null },
+      where: { category: { vendorId }, deletedAt: null },
       orderBy: { categoryId: 'asc' }, // Order by category ID or sortOrder instead
       include: { category: true },
     });

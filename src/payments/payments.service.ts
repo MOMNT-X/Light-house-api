@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { PaymentStatus, OrderStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class PaymentsService {
@@ -18,15 +17,10 @@ export class PaymentsService {
   private getOpayConfig() {
     return {
       publicKey: this.configService.get<string>('OPAY_PUBLIC_KEY') || '',
-      secretKey: this.configService.get<string>('OPAY_SECRET_KEY') || '',
+      secretKey: this.configService.get<string>('OPAY_PRIVATE_KEY') || '',
       merchantId: this.configService.get<string>('OPAY_MERCHANT_ID') || '',
-      baseUrl: this.configService.get<string>('OPAY_BASE_URL') || 'https://sandboxapi.opaycheckout.com',
+      baseUrl: (this.configService.get<string>('OPAY_BASE_URL') || 'https://sandboxapi.opaycheckout.com').split('/api/v1')[0],
     };
-  }
-
-  private generateSignature(payload: any, secretKey: string): string {
-    const stringified = JSON.stringify(payload);
-    return crypto.createHmac('sha512', secretKey).update(stringified).digest('hex');
   }
 
   async initiatePayment(userId: string, orderId: string, idempotencyKey: string) {
@@ -44,25 +38,23 @@ export class PaymentsService {
 
     const payload = {
       reference: idempotencyKey,
-      mchNo: config.merchantId,
-      mchShortName: 'Light House Logistics',
-      productName: `Order ${order.orderNumber}`,
-      productDesc: `Food delivery order for ${order.orderNumber}`,
-      userPhone: order.address?.phone || '+2348000000000',
+      mchShortName: 'LightHouse',
+      productName: `Order ${order.id.substring(0, 8)}`,
+      productDesc: `Food delivery order for ${order.id.substring(0, 8)}`,
+      userPhone: '+2348000000000',
       userRequestIp: '127.0.0.1', // Should extract from Req
       amount: order.total.toString(),
       currency: 'NGN',
       payTypes: ['BankTransfer', 'Card', 'USSD'],
       payMethods: ['account', 'qrcode', 'bankCard', 'bankTransfer'],
-      returnUrl: `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173'}/payment/processing?orderId=${order.id}&ref=${idempotencyKey}`,
-      callbackUrl: `${this.configService.get<string>('API_URL') || 'http://localhost:3000'}/api/v1/webhooks/opay`,
+      returnUrl: `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/payment/processing?orderId=${order.id}&ref=${idempotencyKey}`,
+      callbackUrl: `${this.configService.get<string>('API_URL') || 'https://my-public-tunnel.ngrok.io'}/api/v1/webhooks/opay`,
+      cancelUrl: `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/cart`,
       expireAt: '30', // minutes
     };
 
-    const signature = this.generateSignature(payload, config.secretKey);
-
     try {
-      const response = await fetch(`${config.baseUrl}/api/v1/international/cashier/create`, {
+      const response = await fetch(`${config.baseUrl}/api/v3/cashier/initialize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,6 +74,9 @@ export class PaymentsService {
         throw new BadRequestException(`Payment initialization failed: ${responseData.message}`);
       }
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error('Failed to communicate with OPay', error);
       throw new BadRequestException('Payment service unavailable');
     }
@@ -101,11 +96,13 @@ export class PaymentsService {
   async getPaymentStatus(userId: string, orderId: string) {
     const order = await this.ordersService.findOne(userId, orderId);
     
-    // Map backend PaymentStatus to the frontend's expected simplified string
+    // Map backend OrderStatus to the frontend's expected simplified string
     let status = 'PENDING';
-    if (order.paymentStatus === 'PAID') status = 'SUCCESS';
-    if (order.paymentStatus === 'FAILED' || order.paymentStatus === 'REFUNDED') status = 'FAILED';
-    if (order.status === 'CANCELLED') status = 'CANCELLED';
+    if (order.status === 'CONFIRMED' || order.status === 'PREPARING' || order.status === 'READY_FOR_DISPATCH' || order.status === 'OUT_FOR_DELIVERY' || order.status === 'DELIVERED') {
+      status = 'SUCCESS';
+    } else if (order.status === 'CANCELLED') {
+      status = 'CANCELLED';
+    }
 
     return {
       orderId: order.id,

@@ -38,8 +38,7 @@ async function bootstrap() {
   );
 
   // ── Global Interceptors & Filters ─────────────────
-  const { httpAdapter } = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new GlobalExceptionFilter(httpAdapter));
+  app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   // ── Start ──────────────────────────────────────────

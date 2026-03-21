@@ -1,0 +1,541 @@
+const fs = require('fs');
+
+const data = [
+  {
+    name: 'Five Star Bakery',
+    slug: 'five-star-bakery',
+    description: 'Freshly baked breads, pastries, and cakes.',
+    category: 'Bakery',
+    logoUrl: '/4 Ingredient Chocolate Bread (No Butter or Oil).jfif',
+    bannerUrl: '/4 Ingredient Chocolate Bread (No Butter or Oil).jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 50000,
+    minOrder: 150000,
+    deliveryRadius: 10.5,
+    categories: [
+      {
+        name: 'Breads',
+        sortOrder: 1,
+        items: [
+          { name: 'Mini Loaf', description: '', price: 50000, imageUrl: '/mini loaf.jfif' },
+          { name: 'Buns (2 in 1)', description: '', price: 60000, imageUrl: '/sample.jpeg' },
+          { name: 'Medium Loaf', description: '', price: 100000, imageUrl: '/medium loaf.jfif' },
+          { name: 'Coconut Bread', description: '', price: 130000, imageUrl: '/coconut bread.jfif' },
+          { name: 'Large Loaf', description: '', price: 130000, imageUrl: '/White Bread.jfif' },
+          { name: 'Xtra-Large Loaf', description: '', price: 150000, imageUrl: '/medium loaf.jfif' },
+          { name: 'Mixed Fruit', description: '', price: 150000, imageUrl: '/4 Ingredient Chocolate Bread (No Butter or Oil).jfif' },
+          { name: 'Sardine Bread', description: '', price: 160000, imageUrl: '/sardine bread.jfif' }
+        ]
+      },
+      {
+        name: 'Choco Mix',
+        sortOrder: 2,
+        items: [
+          { name: 'Choco Mix (Medium Loaf)', description: '', price: 90000, imageUrl: '/4 Ingredient Chocolate Bread (No Butter or Oil).jfif' },
+          { name: 'Choco Mix (Big Loaf)', description: '', price: 140000, imageUrl: '/4 Ingredient Chocolate Bread (No Butter or Oil).jfif' }
+        ]
+      },
+      {
+        name: 'Milk Bloom',
+        sortOrder: 3,
+        items: [
+          { name: 'Milk Bloom (Medium Loaf)', description: '', price: 150000, imageUrl: '/milk bread.jfif' },
+          { name: 'Milk Bloom (Big Loaf)', description: '', price: 200000, imageUrl: '/Easy Milk Bread Loaf.jfif' }
+        ]
+      },
+      {
+        name: 'Cakes',
+        sortOrder: 4,
+        items: [
+          { name: 'Single Cupcake', description: '', price: 70000, imageUrl: '/cupcake.jfif' },
+          { name: 'Foil Cake', description: '', price: 150000, imageUrl: '/foil cake.jfif' },
+          { name: 'Pack of 6', description: '', price: 400000, imageUrl: '/vanilla cupcakes' }
+        ]
+      },
+      {
+        name: 'Pastries',
+        sortOrder: 5,
+        items: [
+          { name: 'Fish Pie', description: '', price: 80000, imageUrl: '/Easy sausage rolls.jfif' },
+          { name: 'Sausage Roll', description: '', price: 80000, imageUrl: '/sausage roll.jfif' },
+          { name: 'Meat Pie', description: '', price: 100000, imageUrl: '/Nigeria meat pie.jfif' },
+          { name: 'Chicken Pie', description: '', price: 100000, imageUrl: '/Nigeria meat pie.jfif' }
+        ]
+      },
+      {
+        name: 'Donuts',
+        sortOrder: 6,
+        items: [
+          { name: 'Plain and Sugar-Coated Donut', description: '', price: 80000, imageUrl: '/sugarcoated donut.jfif' },
+          { name: 'Jelly Donut', description: '', price: 100000, imageUrl: '/cream-filled donut.jfif' },
+          { name: 'Cream-Filled Donut', description: '', price: 110000, imageUrl: '/Nutella Filled Donuts.jfif' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Choplife Kitchen',
+    slug: 'choplife-kitchen',
+    description: 'Your favorite local dishes.',
+    category: 'Local Food',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/Jollof Rice & Chicken.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 120000,
+    minOrder: 200000,
+    categories: [
+      {
+        name: 'Jollof Rice with Chicken/Beef',
+        sortOrder: 1,
+        items: [
+          { name: 'Big Plate', description: 'With Chicken/Beef', price: 330000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Small Plate', description: 'With Chicken/Beef', price: 280000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Big Plate with Egg', description: 'With Egg', price: 200000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Small Plate with Egg', description: 'With Egg', price: 150000, imageUrl: '/Smoky Asun Jollof Rice.jfif' }
+        ]
+      },
+      {
+        name: 'Spaghetti with Chicken/Beef',
+        sortOrder: 2,
+        items: [
+          { name: 'Big Plate', description: 'With Chicken/Beef', price: 330000, imageUrl: '/spaghetti.jfif' },
+          { name: 'Small Plate', description: 'With Chicken/Beef', price: 280000, imageUrl: '/spaghetti.jfif' },
+          { name: 'Big Plate with Egg', description: 'With Egg', price: 200000, imageUrl: '/pasta.jfif' },
+          { name: 'Small Plate with Egg', description: 'With Egg', price: 150000, imageUrl: '/pasta.jfif' }
+        ]
+      },
+      {
+        name: 'Rice and Beans with Chicken/Beef',
+        sortOrder: 3,
+        items: [
+          { name: 'Big Plate', description: 'With Chicken/Beef', price: 330000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Small Plate', description: 'With Chicken/Beef', price: 280000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Big Plate with Egg', description: 'With Egg', price: 200000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Small Plate with Egg', description: 'With Egg', price: 150000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' }
+        ]
+      },
+      {
+        name: 'Maccaroni with Chicken/Beef',
+        sortOrder: 4,
+        items: [
+          { name: 'Big Plate', description: 'With Chicken/Beef', price: 330000, imageUrl: '/maccaroni.jfif' },
+          { name: 'Small Plate', description: 'With Chicken/Beef', price: 280000, imageUrl: '/maccaroni.jfif' },
+          { name: 'Big Plate with Egg', description: 'With Egg', price: 200000, imageUrl: '/maccaroni.jfif' },
+          { name: 'Small Plate with Egg', description: 'With Egg', price: 150000, imageUrl: '/maccaroni.jfif' }
+        ]
+      },
+      {
+        name: 'Turkey Meals',
+        sortOrder: 5,
+        items: [
+          { name: 'Jollof Rice with Turkey (Big)', description: 'Big plate turkey', price: 500000, imageUrl: '/Nigeria Jollof and turkey.jfif' },
+          { name: 'Jollof Rice with Turkey (Small)', description: 'Small plate turkey', price: 450000, imageUrl: '/Nigeria Jollof and turkey.jfif' },
+          { name: 'Spaghetti with Turkey (Big)', description: 'Big plate turkey', price: 500000, imageUrl: '/Jollof Spaghetti - KikiFoodies.jfif' },
+          { name: 'Spaghetti with Turkey (Small)', description: 'Small plate turkey', price: 450000, imageUrl: '/Jollof Spaghetti - KikiFoodies.jfif' },
+          { name: 'Rice and Beans with Turkey (Big)', description: 'Big plate', price: 500000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Rice and Beans with Turkey (Small)', description: 'Small plate', price: 450000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Maccaroni with Turkey (Big)', description: 'Big plate turkey', price: 500000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Maccaroni with Turkey (Small)', description: 'Small plate turkey', price: 450000, imageUrl: '/Steamy Nigeria Jollof.jfif' }
+        ]
+      },
+      {
+        name: 'Noodles',
+        sortOrder: 6,
+        items: [
+          { name: 'Noodles with Chicken', description: 'Delicious noodles', price: 300000, imageUrl: '/noodles.jfif' },
+          { name: 'Noodles with Turkey', description: 'Delicious noodles', price: 400000, imageUrl: '/noodles.jfif' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Tee Munchies Kitchen',
+    slug: 'tee-munchies-kitchen',
+    description: 'Noodles, shawarma, and fast food.',
+    category: 'Fast Food',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/noodles.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 100000,
+    minOrder: 250000,
+    categories: [
+      {
+        name: 'Tee’s Noddle Experience',
+        sortOrder: 1,
+        items: [
+          { name: 'Simple Stir', description: '2 Noodles + 2 Egg + Sausage + Veggies', price: 250000, imageUrl: '/noodles.jfif' },
+          { name: 'Suya Loaded Noodles', description: '2 Noodles + 2 Egg + Suya + Sausage + Veggies', price: 350000, imageUrl: '/maccaroni.jfif' },
+          { name: 'SeaFusion Noodles', description: '2 Noodles + 2 Egg + Sausage + Seafood + Veggies', price: 400000, imageUrl: '/5-minuterecipe_com.jfif' },
+          { name: 'Sunshine', description: '2 Noodle + 2 Egg + Sausage + Full Sardine + Veggies', price: 450000, imageUrl: '/pasta.jfif' },
+          { name: 'Chicken Vibes Bowl', description: '2 Noodles + 2 Egg + Sausage + Chicken + Veggies', price: 400000, imageUrl: '/vibes bowl.jfif' },
+          { name: 'Tee Ultimate Combo', description: '2 Noodle + 2 Egg + Sausage + Turkey + Veggies', price: 750000, imageUrl: '/noodles.jfif' }
+        ]
+      },
+      {
+        name: 'Shawarma Pricelist',
+        sortOrder: 2,
+        items: [
+          { name: 'Royale Classic Shawarma', description: 'Single Sausage Chicken', price: 250000, imageUrl: '/sharwama 1.jfif' },
+          { name: 'Double Royale Supreme', description: 'Double Sausage Chicken', price: 300000, imageUrl: '/Chicken Shawarma.jfif' },
+          { name: 'Suya Fusion Royale', description: 'Single Sausage Chicken & Suya', price: 350000, imageUrl: '/Chicken Shawarma.jfif' },
+          { name: 'Grand Supreme Double', description: 'Double Sausage Extra Chicken', price: 350000, imageUrl: '/sharwama 1.jfif' },
+          { name: 'Suya Heritage Combo', description: 'Only Suya Shawarma', price: 400000, imageUrl: '/sharwama 1.jfif' }
+        ]
+      },
+      {
+        name: 'Toast & Sandwich',
+        sortOrder: 3,
+        items: [
+          { name: 'Loaded Cheese Toast', description: 'Extra cheese', price: 100000, imageUrl: '/toast.jfif' }
+        ]
+      },
+      {
+        name: 'Chicken & Chips',
+        sortOrder: 4,
+        items: [
+          { name: 'Chicken and Chips', description: 'Regular', price: 600000, imageUrl: '/chicken and chips.jfif' },
+          { name: 'Extra Chicken', description: '', price: 400000, imageUrl: '/chicken and chips.jfif' },
+          { name: 'Extra Chips/Fries', description: '', price: 150000, imageUrl: '/chicken and chips.jfif' }
+        ]
+      },
+      {
+        name: 'Coffee',
+        sortOrder: 5,
+        items: [
+          { name: 'Small Cup', description: 'Hot coffee', price: 100000, imageUrl: '/Cappuccino.jfif' },
+          { name: 'Big Cup', description: 'Hot coffee', price: 150000, imageUrl: '/coffee.jfif' }
+        ]
+      },
+      {
+        name: 'Popcorn / Desserts',
+        sortOrder: 6,
+        items: [
+          { name: 'Popcorn with Milk', description: '', price: 50000, imageUrl: '/Popcorn.jfif' },
+          { name: 'Ice Cream', description: 'Vanilla / Chocolate', price: 150000, imageUrl: '/ice cream.jfif' },
+          { name: 'Candy Floss', description: '', price: 50000, imageUrl: '/candy floss.jfif' }
+        ]
+      },
+      {
+        name: 'Extras',
+        sortOrder: 7,
+        items: [
+          { name: 'Egg', description: '', price: 50000, imageUrl: '/egg and meat.jpg' },
+          { name: 'Chicken', description: '', price: 150000, imageUrl: '/Nigeria Jollof and turkey.jfif' },
+          { name: 'Turkey', description: '', price: 500000, imageUrl: '/Nigeria Jollof and turkey.jfif' },
+          { name: 'Sauce', description: '', price: 50000, imageUrl: '/egg and meat.jpg' },
+          { name: 'Plantain', description: '', price: 50000, imageUrl: '/plantain.jpg' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Daps Kitchen',
+    slug: 'daps-kitchen',
+    description: 'Main meals and extras.',
+    category: 'Local Food',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/daps kitchen.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 50000,
+    minOrder: 250000,
+    categories: [
+      {
+        name: 'Main Items',
+        sortOrder: 1,
+        items: [
+          { name: 'Small Plate with Beef', description: '', price: 250000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Big Plate with Beef', description: '', price: 300000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Small Plate with Fish', description: '', price: 300000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Big Plate with Fish', description: '', price: 350000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Small Plate with Chicken', description: '', price: 250000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Big Plate with Chicken', description: '', price: 300000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Small Plate with Small Turkey', description: '', price: 350000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Big Plate with Small Turkey', description: '', price: 400000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Small Plate with Big Turkey', description: '', price: 550000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Big Plate with Big Turkey', description: '', price: 600000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Spaghetti with Chicken', description: '', price: 400000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Spaghetti with Turkey', description: '', price: 600000, imageUrl: '/spaghetti.jfif' },
+          { name: 'Asun Rice (Per Spoon)', description: '', price: 150000, imageUrl: '/Ofada Stew Recipe (How To Make Ofada Stew) - My Active Kitchen.jfif' }
+        ]
+      },
+      {
+        name: 'Extras',
+        sortOrder: 2,
+        items: [
+          { name: 'Rice', description: '', price: 50000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Plantain', description: '', price: 20000, imageUrl: '/plantain.jpg' },
+          { name: 'Coleslaw', description: '', price: 50000, imageUrl: '/coleslaw.jfif' },
+          { name: 'Turkey S/S', description: '', price: 200000, imageUrl: '/Nigeria Jollof and turkey.jfif' },
+          { name: 'Egg/Beef', description: '', price: 30000, imageUrl: '/egg and meat.jpg' },
+          { name: 'Fish', description: '', price: 200000, imageUrl: '/Jollof Rice (2).jfif' },
+          { name: 'Chicken', description: '', price: 150000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Turkey B/S', description: '', price: 400000, imageUrl: '/Jollof Rice & Chicken.jfif' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'BK 48 Kitchen',
+    slug: 'bk-48-kitchen',
+    description: 'Jollof, fried rice, pasta and swallows.',
+    category: 'Restaurant',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/Nigerian Native Jollof Rice.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 150000,
+    minOrder: 200000,
+    categories: [
+      {
+        name: 'Main Menu',
+        sortOrder: 1,
+        items: [
+          { name: 'Jollof & Fried Rice with Chicken Big Plate', description: '', price: 300000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Jollof & Fried Rice with Chicken Small Plate', description: '', price: 250000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Jollof & Fried Rice with Beef Big Plate', description: '', price: 200000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Jollof & Fried Rice with Beef Small Plate', description: '', price: 150000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Jollof & Fried Rice with Hake Fish Big Plate', description: '', price: 300000, imageUrl: '/Jollof Rice (2).jfif' },
+          { name: 'Jollof & Fried Rice with Hake Fish Small Plate', description: '', price: 250000, imageUrl: '/Jollof Rice (1).jfif' },
+          { name: 'Stir-Fry Pasta with Chicken', description: '', price: 350000, imageUrl: '/Jollof Spaghetti - KikiFoodies.jfif' },
+          { name: 'Native Pasta with Chicken', description: '', price: 350000, imageUrl: '/Nigerian Native Jollof Rice.jfif' },
+          { name: 'Beef Penne Pasta with Chicken', description: '', price: 350000, imageUrl: '/maccaroni.jfif' },
+          { name: 'Beef Stir-Fry Noodles with Chicken & Fried Egg', description: '', price: 350000, imageUrl: '/sample.jpeg' },
+          { name: 'Beef Stir-Fry Noodles with Chicken', description: '', price: 300000, imageUrl: '/noodles and eggs.jfif' },
+          { name: 'Spicy Noodles with Fried Egg & Chicken', description: '', price: 250000, imageUrl: '/noodles.jfif' },
+          { name: 'Spicy Noodles with Chicken', description: '', price: 200000, imageUrl: '/noodles.jfif' },
+          { name: 'Pancakes, Scrambled Eggs, Sausages & Maple Syrup', description: '', price: 300000, imageUrl: '/Classic Tuna Sandwich' },
+          { name: 'Chicken & Chips with Ketchup', description: '', price: 350000, imageUrl: '/chicken and chips.jpeg' },
+          { name: 'Fried Yam & Plantain with Chicken', description: '', price: 200000, imageUrl: '/chicken and chips.jpeg' },
+          { name: 'Fried Yam & Plantain with Beef', description: '', price: 160000, imageUrl: '/chicken and chips.jpeg' },
+          { name: 'Boiled Plantain & Efo with Chicken', description: '', price: 300000, imageUrl: '/plantain & efo.jpeg' },
+          { name: 'Boiled Plantain & Efo with Beef', description: '', price: 250000, imageUrl: '/plantain & efo.jpeg' }
+        ]
+      },
+      {
+        name: 'Swallow',
+        sortOrder: 2,
+        items: [
+          { name: 'Pounded Yam', description: '', price: 50000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Amala', description: '', price: 30000, imageUrl: '/Breakfast served by Chat GPT😍😋_   Prompt_ A….jfif' },
+          { name: 'Semo', description: '', price: 30000, imageUrl: '/25 Authentic Nigerian Dinner Recipes.jfif' }
+        ]
+      },
+      {
+        name: 'Extras',
+        sortOrder: 3,
+        items: [
+          { name: 'Rice', description: '', price: 40000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Plantain', description: '', price: 50000, imageUrl: '/plantain.jpg' },
+          { name: 'Coleslaw', description: '', price: 50000, imageUrl: '/coleslaw.jfif' },
+          { name: 'Fried Yam', description: '', price: 50000, imageUrl: '/chicken and chips.jpeg' },
+          { name: 'Chicken', description: '', price: 100000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Beef', description: '', price: 50000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Hake Fish', description: '', price: 100000, imageUrl: '/hake fish.jfif' },
+          { name: 'Sausage', description: '', price: 50000, imageUrl: '/egg and meat.jpg' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Bissy Joy',
+    slug: 'bissy-joy',
+    description: 'Extensive rice and swallow dishes.',
+    category: 'Local Food',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/Top 21 Nigerian Foods That Will Blow Your Taste Buds - Chef\'s Pencil.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 100000,
+    minOrder: 250000,
+    categories: [
+      {
+        name: 'Rice / Main Dishes',
+        sortOrder: 1,
+        items: [
+          { name: 'White Rice — Extra Plate', description: '', price: 300000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'White Rice — Regular Plate', description: '', price: 250000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'White Rice & Beans (Wache) — Extra Plate', description: '', price: 350000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'White Rice & Beans (Wache) — Regular Plate', description: '', price: 300000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Jollof & Fried Rice — Extra Plate', description: '', price: 300000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Jollof & Fried Rice — Regular Plate', description: '', price: 250000, imageUrl: '/Jollof Rice & Chicken.jfif' },
+          { name: 'Chinese Rice — Extra Plate', description: '', price: 500000, imageUrl: '/Ofada Stew Recipe (How To Make Ofada Stew) - My Active Kitchen.jfif' },
+          { name: 'Chinese Rice — Regular Plate', description: '', price: 400000, imageUrl: '/Ofada Stew Recipe (How To Make Ofada Stew) - My Active Kitchen.jfif' },
+          { name: 'Village Rice — Extra Plate', description: '', price: 500000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Village Rice — Regular Plate', description: '', price: 400000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Yam Porridge — Extra Plate', description: '', price: 350000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Yam Porridge — Regular Plate', description: '', price: 300000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Yam & Egg — Extra Plate', description: '', price: 350000, imageUrl: '/sample.jpeg' },
+          { name: 'Yam & Egg — Regular Plate', description: '', price: 300000, imageUrl: '/sample.jpeg' },
+          { name: 'Jollof Macaroni — Extra Plate', description: '', price: 350000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Jollof Macaroni — Regular Plate', description: '', price: 300000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Jollof Spaghetti — Extra Plate', description: '', price: 350000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Jollof Spaghetti — Regular Plate', description: '', price: 300000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Beans & Bread — Extra Plate', description: '', price: 300000, imageUrl: '/sample.jpeg' },
+          { name: 'Beans & Bread — Regular Plate', description: '', price: 250000, imageUrl: '/sample.jpeg' },
+          { name: 'Semo — Extra Plate', description: '', price: 500000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Semo — Regular Plate', description: '', price: 400000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Ofada Rice — Extra Plate', description: '', price: 500000, imageUrl: '/Ofada Stew Recipe (How To Make Ofada Stew) - My Active Kitchen.jfif' },
+          { name: 'Ofada Rice — Regular Plate', description: '', price: 400000, imageUrl: '/Ofada Stew Recipe (How To Make Ofada Stew) - My Active Kitchen.jfif' }
+        ]
+      },
+      {
+        name: 'Swallow / Proteins',
+        sortOrder: 2,
+        items: [
+          { name: 'Eba — Extra Plate', description: '', price: 300000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Eba — Regular Plate', description: '', price: 250000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Amala — Extra Plate', description: '', price: 300000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Amala — Regular Plate', description: '', price: 250000, imageUrl: '/Breakfast served by Chat GPT😍😋_   Prompt_ A….jfif' },
+          { name: 'Fufu — Extra Plate', description: '', price: 350000, imageUrl: '/25 Authentic Nigerian Dinner Recipes.jfif' },
+          { name: 'Fufu — Regular Plate', description: '', price: 300000, imageUrl: '/25 Authentic Nigerian Dinner Recipes.jfif' },
+          { name: 'Pounded Yam — Extra Plate', description: '', price: 300000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Pounded Yam — Regular Plate', description: '', price: 250000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Pepper Soup — Extra Plate', description: '', price: 250000, imageUrl: '/pepper soup.jfif' },
+          { name: 'Pepper Soup — Regular Plate', description: '', price: 200000, imageUrl: '/pepper soup.jfif' },
+          { name: 'Chicken — Extra Plate', description: '', price: 400000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Chicken — Regular Plate', description: '', price: 350000, imageUrl: '/daps kitchen.jfif' },
+          { name: 'Turkey — Extra Plate', description: '', price: 250000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Turkey — Regular Plate', description: '', price: 200000, imageUrl: '/daps jollof.jfif' },
+          { name: 'Assorted — Extra Plate', description: '', price: 150000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Assorted — Regular Plate', description: '', price: 100000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Goat Meat', description: '', price: 30000, imageUrl: '/pepper soup.jfif' },
+          { name: 'Egg — Extra Plate', description: '', price: 50000, imageUrl: '/egg and meat.jpg' },
+          { name: 'Egg — Regular Plate', description: '', price: 20000, imageUrl: '/egg and meat.jpg' },
+          { name: 'Ponmo', description: '', price: 50000, imageUrl: '/egg and meat.jpg' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Bukateria Malete',
+    slug: 'bukateria-malete',
+    description: 'Student favorite Bukateria.',
+    category: 'Buka',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/Top 21 Nigerian Foods That Will Blow Your Taste Buds - Chef\'s Pencil.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 100000,
+    minOrder: 100000,
+    categories: [
+      {
+        name: 'Food Per Portion',
+        sortOrder: 1,
+        items: [
+          { name: 'Rice and Bean', description: '', price: 60000, imageUrl: '/Steamed Rice and Beans with Tomato Sauce.jfif' },
+          { name: 'Jollof Rice / Fried Rice', description: '', price: 50000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Spaghetti', description: '', price: 60000, imageUrl: '/spaghetti.jpeg' },
+          { name: 'Macaroni', description: '', price: 50000, imageUrl: '/maccaroni.jfif' },
+          { name: 'Porridge', description: '', price: 60000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Porridge Bean', description: '', price: 60000, imageUrl: '/Steamy Nigeria Jollof.jfif' },
+          { name: 'Moi Moi', description: '', price: 100000, imageUrl: '/moi moi.jfif' }
+        ]
+      },
+      {
+        name: 'Food Per Wrap',
+        sortOrder: 2,
+        items: [
+          { name: 'Amala / Eba / Semo / Fufu', description: '', price: 30000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Pounded Yam', description: '', price: 60000, imageUrl: '/Egusi Soup.jfif' }
+        ]
+      },
+      {
+        name: 'Soups & Stew',
+        sortOrder: 3,
+        items: [
+          { name: 'Efo', description: '', price: 50000, imageUrl: '/Making Nigerian Afang Soup Recipe - Dream Africa.jfif' },
+          { name: 'Ewedu', description: '', price: 50000, imageUrl: '/Breakfast served by Chat GPT😍😋_   Prompt_ A….jfif' },
+          { name: 'Egusi', description: '', price: 50000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Ila', description: '', price: 50000, imageUrl: '/Breakfast served by Chat GPT😍😋_   Prompt_ A….jfif' },
+          { name: 'Stew', description: '', price: 50000, imageUrl: '/Designer Stew by Renny.jfif' },
+          { name: 'Ata Rice', description: '', price: 50000, imageUrl: '/Craving a meal that hits all the right spots_….jpg' }
+        ]
+      },
+      {
+        name: 'Proteins',
+        sortOrder: 4,
+        items: [
+          { name: 'Chicken', description: '', price: 300000, imageUrl: '/daps kitchen.jpeg' },
+          { name: 'Turkey', description: '', price: 400000, imageUrl: '/daps jollof.jpeg' },
+          { name: 'Ponmo', description: '', price: 70000, imageUrl: '/egg and meat.jpg' },
+          { name: 'Beef', description: '', price: 50000, imageUrl: '/Delicious Jollof Spaghetti 😋😋.jpg' },
+          { name: 'Titus', description: '', price: 300000, imageUrl: '/hake fish.jfif' },
+          { name: 'Assorted', description: '', price: 70000, imageUrl: '/Smoky Asun Jollof Rice.jfif' },
+          { name: 'Hake', description: '', price: 300000, imageUrl: '/hake fish.jfif' },
+          { name: 'Egg', description: '', price: 50000, imageUrl: '/egg and meat.jpg' }
+        ]
+      },
+      {
+        name: 'Snacks & Bread',
+        sortOrder: 5,
+        items: [
+          { name: 'Sugar Donuts', description: '', price: 50000, imageUrl: '/jelley donut.jfif' },
+          { name: 'Meat Pie', description: '', price: 70000, imageUrl: '/Nigerian meat pie.jfif' },
+          { name: 'Chicken Pie', description: '', price: 80000, imageUrl: '/Nigerian meat pie.jfif' },
+          { name: 'Sausage Roll', description: '', price: 100000, imageUrl: '/Easy sausage rolls.jfif' },
+          { name: 'Chin Chin', description: '', price: 50000, imageUrl: '/Easy and Delicious Cruffins Recipe.jfif' },
+          { name: 'Cake', description: '', price: 100000, imageUrl: '/foil cake.jfif' },
+          { name: 'Big Loaf Bread', description: '', price: 100000, imageUrl: '/Easy Milk Bread Loaf.jfif' },
+          { name: 'Small Loaf Bread', description: '', price: 60000, imageUrl: '/Easy Milk Bread Loaf.jfif' }
+        ]
+      },
+      {
+        name: 'Drinks',
+        sortOrder: 6,
+        items: [
+          { name: 'Water', description: '', price: 30000, imageUrl: '/sample.jpeg' },
+          { name: 'Chi Exotic', description: '', price: 200000, imageUrl: '/sample.jpeg' },
+          { name: 'Pet Coke / Fanta / Sprite / Pepsi / Teem', description: '', price: 60000, imageUrl: '/sample.jpeg' }
+        ]
+      }
+    ]
+  },
+  {
+    name: 'Okele-Joint Vendor',
+    slug: 'okele-joint',
+    description: 'Swallow and native soups.',
+    category: 'Buka',
+    logoUrl: '/logo.jpeg',
+    bannerUrl: '/Making Nigerian Afang Soup Recipe - Dream Africa.jfif',
+    isActive: true,
+    isOpen: true,
+    deliveryFee: 100000,
+    minOrder: 150000,
+    categories: [
+      {
+        name: 'Swallow / Staples',
+        sortOrder: 1,
+        items: [
+          { name: 'Amala', description: '', price: 30000, imageUrl: '/Breakfast served by Chat GPT😍😋_   Prompt_ A….jfif' },
+          { name: 'Pounded Yam', description: '', price: 50000, imageUrl: '/Egusi Soup.jfif' },
+          { name: 'Semo', description: '', price: 20000, imageUrl: '/25 Authentic Nigerian Dinner Recipes.jfif' },
+          { name: 'Fufu', description: '', price: 20000, imageUrl: '/25 Authentic Nigerian Dinner Recipes.jfif' },
+          { name: 'Eba', description: '', price: 20000, imageUrl: '/Making Nigerian Afang Soup Recipe - Dream Africa.jfif' },
+          { name: 'Tuwo Rice', description: '', price: 10000, imageUrl: '/Steamy Nigeria Jollof.jfif' }
+        ]
+      },
+      {
+        name: 'Proteins / Sides',
+        sortOrder: 2,
+        items: [
+          { name: 'Cow Meat', description: '', price: 20000, imageUrl: '/Designer Stew by Renny.jfif' },
+          { name: 'Goat Meat', description: '', price: 50000, imageUrl: 'Designer Stew by Renny.jfif' },
+          { name: 'Fish', description: '', price: 150000, imageUrl: 'Designer Stew by Renny.jfif' },
+          { name: 'Wara', description: '', price: 30000, imageUrl: 'Designer Stew by Renny.jfif' },
+          { name: 'Ponmo', description: '', price: 30000, imageUrl: 'Designer Stew by Renny.jfif' },
+          { name: 'Cow Leg', description: '', price: 50000, imageUrl: 'Designer Stew by Renny.jfif' },
+          { name: 'Chicken', description: '', price: 150000, imageUrl: '/Delicious Jollof Spaghetti 😋😋.jpg' },
+          { name: 'Smoke Fish', description: '', price: 50000, imageUrl: '/Delicious Jollof Spaghetti 😋😋.jpg' },
+          { name: 'Hake Fish', description: '', price: 100000, imageUrl: '/hake fish.jfif' }
+        ]
+      }
+    ]
+  }
+];
+
+fs.writeFileSync(__dirname + '/seed-data.json', JSON.stringify(data, null, 2));
+console.log('seed-data.json created!');

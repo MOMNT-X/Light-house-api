@@ -36,7 +36,7 @@ export class WebhooksService {
         await this.notificationsService.sendInAppNotification(
           order.userId, 
           'Payment Successful', 
-          `Your order #${order.orderNumber} has been confirmed.`
+          `Your order #${order.id.substring(0, 8)} has been confirmed.`
         );
         // Maybe also notify the vendor, tracking, etc.
 

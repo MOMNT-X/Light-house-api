@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -59,9 +59,7 @@ export class AuthController {
     const rfToken = req.cookies?.['refresh_token'];
     
     if (!rfToken) {
-      // Return 401 instead of throwing directly so the client cleanly catches it
-      res.status(HttpStatus.UNAUTHORIZED).json({ message: 'No refresh token' });
-      return;
+      throw new UnauthorizedException('No refresh token');
     }
 
     try {
@@ -87,7 +85,7 @@ export class AuthController {
       return { accessToken };
     } catch {
       res.clearCookie('refresh_token');
-      res.status(HttpStatus.UNAUTHORIZED).json({ message: 'Invalid refresh token' });
+      throw new UnauthorizedException('Invalid refresh token');
     }
   }
 

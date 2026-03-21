@@ -1,0 +1,82 @@
+import { AddressesService } from './addresses.service';
+import { Prisma } from '@prisma/client';
+import { CreateAddressDto, UpdateAddressDto } from './dto/addresses.dto';
+export declare class AddressesController {
+    private readonly addressesService;
+    constructor(addressesService: AddressesService);
+    findAll(user: any): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        label: string;
+        street: string;
+        city: string;
+        state: string;
+        landmark: string | null;
+        deliveryInstructions: string | null;
+        latitude: Prisma.Decimal | null;
+        longitude: Prisma.Decimal | null;
+        isDefault: boolean;
+    }[]>;
+    findOne(user: any, id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        label: string;
+        street: string;
+        city: string;
+        state: string;
+        landmark: string | null;
+        deliveryInstructions: string | null;
+        latitude: Prisma.Decimal | null;
+        longitude: Prisma.Decimal | null;
+        isDefault: boolean;
+    }>;
+    create(user: any, createData: CreateAddressDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        label: string;
+        street: string;
+        city: string;
+        state: string;
+        landmark: string | null;
+        deliveryInstructions: string | null;
+        latitude: Prisma.Decimal | null;
+        longitude: Prisma.Decimal | null;
+        isDefault: boolean;
+    }>;
+    update(user: any, id: string, updateData: UpdateAddressDto): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        label: string;
+        street: string;
+        city: string;
+        state: string;
+        landmark: string | null;
+        deliveryInstructions: string | null;
+        latitude: Prisma.Decimal | null;
+        longitude: Prisma.Decimal | null;
+        isDefault: boolean;
+    }>;
+    remove(user: any, id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        userId: string;
+        label: string;
+        street: string;
+        city: string;
+        state: string;
+        landmark: string | null;
+        deliveryInstructions: string | null;
+        latitude: Prisma.Decimal | null;
+        longitude: Prisma.Decimal | null;
+        isDefault: boolean;
+    }>;
+}

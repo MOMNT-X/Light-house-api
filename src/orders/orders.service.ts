@@ -1,23 +1,42 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Order, OrderStatus, PaymentStatus } from '@prisma/client';
+import { IsString, IsUUID, IsOptional, ValidateNested, IsInt, IsArray, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class OrderItemDto {
+  @IsUUID()
+  menuItemId!: string;
+
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+}
 
 export class CreateOrderDto {
+  @IsUUID()
   vendorId!: string;
+
+  @IsUUID()
   addressId!: string;
-  items!: { menuItemId: string; quantity: number }[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items!: OrderItemDto[];
+
+  @IsOptional()
+  @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
   idempotencyKey?: string;
 }
 
 @Injectable()
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
-
-  // Generate a random 6-character alphanumeric string for orderNumber
-  private generateOrderNumber(): string {
-    return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-  }
 
   async create(userId: string, data: CreateOrderDto): Promise<Order> {
     if (!data.items || data.items.length === 0) {
@@ -40,7 +59,7 @@ export class OrdersService {
 
     const itemIds = data.items.map(i => i.menuItemId);
     const menuItems = await this.prisma.menuItem.findMany({
-      where: { id: { in: itemIds }, vendorId: data.vendorId },
+      where: { id: { in: itemIds }, category: { vendorId: data.vendorId } },
     });
 
     if (menuItems.length !== data.items.length) {
@@ -57,6 +76,7 @@ export class OrdersService {
         quantity: item.quantity,
         price: menuItem.price, // snapshot price at time of order
         name: menuItem.name,
+        subtotal: menuItem.price * item.quantity,
       };
     });
 
@@ -64,11 +84,8 @@ export class OrdersService {
     const serviceCharge = 100 * 100; // Flat ₦100 service charge for example
     const total = subtotal + deliveryFee + serviceCharge;
 
-    const orderNumber = this.generateOrderNumber();
-
     return this.prisma.order.create({
       data: {
-        orderNumber,
         userId,
         vendorId: data.vendorId,
         addressId: data.addressId,
@@ -78,8 +95,7 @@ export class OrdersService {
         serviceCharge,
         total,
         status: OrderStatus.PAYMENT_PENDING,
-        paymentStatus: PaymentStatus.PENDING,
-        idempotencyKey: data.idempotencyKey,
+        idempotencyKey: data.idempotencyKey || `idemp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         items: {
           create: orderItemsCreate,
         },
@@ -98,7 +114,7 @@ export class OrdersService {
         take,
         orderBy: { createdAt: 'desc' },
         include: {
-          vendor: { select: { name: true, imageUrl: true } },
+          vendor: { select: { name: true, logoUrl: true } },
           items: true,
         },
       }),
@@ -112,7 +128,7 @@ export class OrdersService {
     const order = await this.prisma.order.findFirst({
       where: { id, userId },
       include: {
-        vendor: { select: { name: true, imageUrl: true } },
+        vendor: { select: { name: true, logoUrl: true } },
         address: true,
         items: true,
       },
