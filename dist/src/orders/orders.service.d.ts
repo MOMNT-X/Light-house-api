@@ -12,7 +12,8 @@ export declare class CreateOrderDto {
     idempotencyKey?: string;
 }
 export declare class OrdersService {
-    private prisma;
+    private readonly prisma;
+    private readonly logger;
     constructor(prisma: PrismaService);
     create(userId: string, data: CreateOrderDto): Promise<Order>;
     findAllByUser(userId: string, skip?: number, take?: number): Promise<{
@@ -97,6 +98,35 @@ export declare class OrdersService {
         addressId: string;
     }>;
     findOneByReference(reference: string): Promise<{
+        address: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: string;
+            label: string;
+            street: string;
+            city: string;
+            state: string;
+            landmark: string | null;
+            deliveryInstructions: string | null;
+            latitude: Prisma.Decimal | null;
+            longitude: Prisma.Decimal | null;
+            isDefault: boolean;
+        };
+        vendor: {
+            name: string;
+            logoUrl: string | null;
+        };
+        items: {
+            name: string;
+            id: string;
+            quantity: number;
+            menuItemId: string;
+            subtotal: number;
+            orderId: string;
+            price: number;
+        }[];
+    } & {
         promoCode: string | null;
         id: string;
         createdAt: Date;
@@ -147,5 +177,6 @@ export declare class OrdersService {
         idempotencyKey: string;
         addressId: string;
     }>;
+    scheduleOrderProgression(orderId: string): void;
 }
 export {};

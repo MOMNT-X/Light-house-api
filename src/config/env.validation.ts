@@ -18,12 +18,15 @@ export const validationSchema = Joi.object({
   // Redis
   REDIS_URL: Joi.string().required(),
 
-  // OPay
-  OPAY_MERCHANT_ID: Joi.string().required(),
-  OPAY_PUBLIC_KEY: Joi.string().required(),
-  OPAY_PRIVATE_KEY: Joi.string().required(),
-  OPAY_WEBHOOK_SECRET: Joi.string().required(),
-  OPAY_BASE_URL: Joi.string().uri().default('https://cashier.opayweb.com/api/v1'),
+  // Paystack
+  PAYSTACK_SECRET_KEY: Joi.string().required(),
+  PAYSTACK_PUBLIC_KEY: Joi.string().required(),
+  PAYSTACK_WEBHOOK_SECRET: Joi.string().optional().allow(''),
+
+  // OPay Cashier (optional — leave blank to disable OPay as a payment option)
+  OPAY_MERCHANT_ID: Joi.string().optional().allow(''),
+  OPAY_PRIVATE_KEY: Joi.string().optional().allow(''),
+  OPAY_PUBLIC_KEY: Joi.string().optional().allow(''),
 
   // Discord
   DISCORD_WEBHOOK_URL: Joi.string().uri().required(),

@@ -5,6 +5,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { HttpAdapterHost } from '@nestjs/core';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -13,6 +14,7 @@ async function bootstrap() {
 
   // ── Security ───────────────────────────────────────
   app.use(helmet());
+  app.use(cookieParser());
 
   app.enableCors({
     origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),

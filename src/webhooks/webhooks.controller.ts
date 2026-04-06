@@ -6,15 +6,22 @@ import { Public } from '../common/decorators/public.decorator';
 export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}
 
-  @Public() // Webhooks come from external sources without JWT
-  @Post('opay')
+  /**
+   * POST /webhooks/paystack
+   * Receives Paystack webhook events.
+   * @Public — no JWT, but we verify the x-paystack-signature HMAC in the service.
+   */
+  @Public()
+  @Post('paystack')
   @HttpCode(HttpStatus.OK)
-  async handleOpay(
-    @Body() payload: any,
-    @Headers('opay-signature') signature: string, // Typically webhook providers send a signature
+  async handlePaystack(
+    @Body() body: any,
+    @Headers('x-paystack-signature') signature: string,
   ) {
-    // Return immediately to acknowledge receipt if processed asynchronously,
-    // but here we process it directly
-    return this.webhooksService.handleOpayWebhook(payload, signature);
+    // We pass the raw JSON string for HMAC verification.
+    // NestJS has already parsed the body, so we re-serialize it.
+    // This works correctly with Paystack as they sign the raw JSON body.
+    const rawBody = JSON.stringify(body);
+    return this.webhooksService.handlePaystackWebhook(rawBody, signature);
   }
 }

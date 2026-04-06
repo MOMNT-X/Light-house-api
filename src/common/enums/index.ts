@@ -43,7 +43,7 @@ export enum AvailabilityState {
 // Cancellation window in seconds (2 minutes)
 export const CANCELLATION_WINDOW_SECONDS = 120;
 
-// OPay currency
+// Default payment currency
 export const DEFAULT_CURRENCY = 'NGN';
 
 // Media storage buckets

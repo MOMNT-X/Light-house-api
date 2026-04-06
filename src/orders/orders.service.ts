@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Order, OrderStatus, PaymentStatus } from '@prisma/client';
 import { IsString, IsUUID, IsOptional, ValidateNested, IsInt, IsArray, Min } from 'class-validator';
@@ -36,7 +36,9 @@ export class CreateOrderDto {
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(OrdersService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, data: CreateOrderDto): Promise<Order> {
     if (!data.items || data.items.length === 0) {
@@ -80,8 +82,8 @@ export class OrdersService {
       };
     });
 
-    const deliveryFee = vendor.deliveryFee;
-    const serviceCharge = 100 * 100; // Flat ₦100 service charge for example
+    const deliveryFee = 500 * 100; // Flat ₦500 delivery fee to match frontend Checkout
+    const serviceCharge = 100 * 100; // Flat ₦100 service charge
     const total = subtotal + deliveryFee + serviceCharge;
 
     return this.prisma.order.create({
@@ -144,6 +146,11 @@ export class OrdersService {
   async findOneByReference(reference: string) {
     const order = await this.prisma.order.findFirst({
       where: { idempotencyKey: reference },
+      include: {
+        vendor: { select: { name: true, logoUrl: true } },
+        address: true,
+        items: true,
+      },
     });
     if (!order) throw new NotFoundException('Order not found via reference');
     return order;
@@ -171,4 +178,63 @@ export class OrdersService {
       data: { status: OrderStatus.CANCELLED },
     });
   }
+
+  /**
+   * Automatically advances an order through fulfilment stages after payment.
+   *
+   * Timeline (temporary until vendors dashboard is live):
+   *   +0 min  → CONFIRMED        (already set by payment verification)
+   *   +2 min  → PREPARING
+   *   +5 min  → READY_FOR_DISPATCH
+   *   +15 min → OUT_FOR_DELIVERY
+   *   +10 min → DELIVERED
+   *
+   * Each step re-checks the order status before updating — a manual
+   * admin override (e.g. CANCELLED) will stop the chain.
+   */
+  scheduleOrderProgression(orderId: string): void {
+    const MIN = 60_000; // 1 minute in ms
+
+    const steps: Array<{ delayMs: number; status: OrderStatus }> = [
+      { delayMs:  2 * MIN, status: OrderStatus.PREPARING },
+      { delayMs:  2 * MIN, status: OrderStatus.READY_FOR_DISPATCH },
+      { delayMs: 7 * MIN, status: OrderStatus.OUT_FOR_DELIVERY },
+      { delayMs: 10 * MIN, status: OrderStatus.DELIVERED },
+    ];
+
+    const logger = this.logger;
+    const prisma = this.prisma;
+
+    for (const { delayMs, status } of steps) {
+      setTimeout(async () => {
+        try {
+          const current = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: { status: true },
+          });
+
+          // Stop progression if order was cancelled or manually overridden
+          const stoppedStatuses: OrderStatus[] = [
+            OrderStatus.CANCELLED,
+            OrderStatus.DELIVERED,
+          ];
+          if (!current || stoppedStatuses.includes(current.status as OrderStatus)) {
+            logger.debug(`[Progression] Skipping ${status} for order ${orderId} — current status: ${current?.status}`);
+            return;
+          }
+
+          await prisma.order.update({
+            where: { id: orderId },
+            data: { status },
+          });
+          logger.log(`[Progression] Order ${orderId} → ${status}`);
+        } catch (err) {
+          logger.error(`[Progression] Failed to update order ${orderId} to ${status}`, err);
+        }
+      }, delayMs);
+    }
+
+    logger.log(`[Progression] Scheduled auto-progression for order ${orderId}`);
+  }
 }
+
