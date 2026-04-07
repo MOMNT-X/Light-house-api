@@ -23,6 +23,30 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         this.logger.log(`[IN-APP] User: ${userId} | Title: ${title} | Msg: ${message}`);
         return true;
     }
+    async sendDiscordNotification(content, embeds) {
+        const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+        if (!webhookUrl) {
+            this.logger.warn('DISCORD_WEBHOOK_URL not set — skipping Discord notification');
+            return false;
+        }
+        try {
+            this.logger.log(`[DISCORD] Sending webhook notification`);
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, embeds }),
+            });
+            if (!response.ok) {
+                this.logger.error(`Discord webhook failed: ${response.statusText}`);
+                return false;
+            }
+            return true;
+        }
+        catch (error) {
+            this.logger.error('Failed to send Discord notification', error);
+            return false;
+        }
+    }
 };
 exports.NotificationsService = NotificationsService;
 exports.NotificationsService = NotificationsService = NotificationsService_1 = __decorate([

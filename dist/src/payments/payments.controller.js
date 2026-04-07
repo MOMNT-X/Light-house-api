@@ -25,19 +25,44 @@ let PaymentsController = class PaymentsController {
     initiatePayment(user, body) {
         return this.paymentsService.initiatePayment(user.userId, body.orderId, body.idempotencyKey);
     }
+    initiateOpayPayment(user, body) {
+        return this.paymentsService.initiateOpayPayment(user.userId, body.orderId, body.idempotencyKey);
+    }
+    verifyPayment(user, reference) {
+        return this.paymentsService.verifyPayment(user.userId, reference);
+    }
     getPaymentStatus(user, orderId) {
         return this.paymentsService.getPaymentStatus(user.userId, orderId);
+    }
+    verifyOrderPayment(user, orderId) {
+        return this.paymentsService.verifyOrderPayment(user.userId, orderId);
     }
 };
 exports.PaymentsController = PaymentsController;
 __decorate([
-    (0, common_1.Post)('initiate'),
+    (0, common_1.Post)('initialize'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "initiatePayment", null);
+__decorate([
+    (0, common_1.Post)('initiate-opay'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "initiateOpayPayment", null);
+__decorate([
+    (0, common_1.Get)('verify'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Query)('reference')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "verifyPayment", null);
 __decorate([
     (0, common_1.Get)('status/:orderId'),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
@@ -46,6 +71,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "getPaymentStatus", null);
+__decorate([
+    (0, common_1.Post)('verify-order/:orderId'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Param)('orderId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "verifyOrderPayment", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, common_1.Controller)('payments'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

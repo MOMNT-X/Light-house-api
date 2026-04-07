@@ -3,9 +3,10 @@ import { WebhooksService } from './webhooks.service';
 import { WebhooksController } from './webhooks.controller';
 import { OrdersModule } from '../orders/orders.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [OrdersModule, NotificationsModule],
+  imports: [OrdersModule, NotificationsModule, PrismaModule],
   controllers: [WebhooksController],
   providers: [WebhooksService],
 })

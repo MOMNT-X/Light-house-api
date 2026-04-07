@@ -21,21 +21,22 @@ let WebhooksController = class WebhooksController {
     constructor(webhooksService) {
         this.webhooksService = webhooksService;
     }
-    async handleOpay(payload, signature) {
-        return this.webhooksService.handleOpayWebhook(payload, signature);
+    async handlePaystack(body, signature) {
+        const rawBody = JSON.stringify(body);
+        return this.webhooksService.handlePaystackWebhook(rawBody, signature);
     }
 };
 exports.WebhooksController = WebhooksController;
 __decorate([
     (0, public_decorator_1.Public)(),
-    (0, common_1.Post)('opay'),
+    (0, common_1.Post)('paystack'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Headers)('opay-signature')),
+    __param(1, (0, common_1.Headers)('x-paystack-signature')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
-], WebhooksController.prototype, "handleOpay", null);
+], WebhooksController.prototype, "handlePaystack", null);
 exports.WebhooksController = WebhooksController = __decorate([
     (0, common_1.Controller)('webhooks'),
     __metadata("design:paramtypes", [webhooks_service_1.WebhooksService])

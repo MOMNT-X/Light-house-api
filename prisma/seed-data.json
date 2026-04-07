@@ -2,7 +2,7 @@
   {
     "name": "Five Star Bakery",
     "slug": "five-star-bakery",
-    "description": "Freshly baked breads, pastries, and cakes.",
+    "description": "Freshly baked breads and pastries.",
     "category": "Bakery",
     "logoUrl": "/4 Ingredient Chocolate Bread (No Butter or Oil).jfif",
     "bannerUrl": "/4 Ingredient Chocolate Bread (No Butter or Oil).jfif",
@@ -1484,19 +1484,19 @@
             "name": "Water",
             "description": "",
             "price": 30000,
-            "imageUrl": "/sample.jpeg"
+            "imageUrl": "/water.jfif"
           },
           {
             "name": "Chi Exotic",
             "description": "",
             "price": 200000,
-            "imageUrl": "/sample.jpeg"
+            "imageUrl": "/chi exotic.jfif"
           },
           {
             "name": "Pet Coke / Fanta / Sprite / Pepsi / Teem",
             "description": "",
             "price": 60000,
-            "imageUrl": "/sample.jpeg"
+            "imageUrl": "/sprite.jfif"
           }
         ]
       }

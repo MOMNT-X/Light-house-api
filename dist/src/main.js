@@ -9,11 +9,13 @@ const app_module_1 = require("./app.module");
 const response_interceptor_1 = require("./common/interceptors/response.interceptor");
 const global_exception_filter_1 = require("./common/filters/global-exception.filter");
 const helmet_1 = __importDefault(require("helmet"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         logger: ['error', 'warn', 'log', 'debug'],
     });
     app.use((0, helmet_1.default)());
+    app.use((0, cookie_parser_1.default)());
     app.enableCors({
         origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
         credentials: true,

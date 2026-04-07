@@ -323,13 +323,13 @@ model Payment {
   orderId         String        @unique
   amount          Int           // kobo
   currency        String        @default("NGN")
-  provider        String        @default("opay")
-  providerRef     String?       @unique // OPay order/reference number
+  provider        String        @default("paystack")
+  providerRef     String?       @unique // Paystack transaction reference
   status          PaymentStatus @default(PENDING)
   idempotencyKey  String        @unique
   paidAt          DateTime?
   failureReason   String?
-  rawCallbackPayload Json?      // store OPay callback for audit
+  rawCallbackPayload Json?      // store Paystack webhook payload for audit
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
