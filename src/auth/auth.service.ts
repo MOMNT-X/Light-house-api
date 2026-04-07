@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Role } from '@prisma/client';
 
 @Injectable()
@@ -14,6 +16,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private prisma: PrismaService,
+    private mailService: MailService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -92,6 +95,62 @@ export class AuthService {
     return tokens;
   }
 
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) return; // We fail silently to prevent email enumeration
+
+    // Generate token
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+    
+    // Set 1-hour expiration
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: tokenHash,
+        passwordResetExpires: expires,
+      },
+    });
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+    
+    await this.mailService.sendPasswordResetEmail(user.email, resetLink);
+  }
+
+  async resetPassword(email: string, token: string, newPassword: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user || !user.passwordResetToken || !user.passwordResetExpires) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    if (new Date() > user.passwordResetExpires) {
+      throw new BadRequestException('Reset token has expired');
+    }
+
+    const isValid = await bcrypt.compare(token, user.passwordResetToken);
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
+    });
+    
+    // Revoke all existing sessions for security
+    await this.logout(user.id);
+  }
+
   private async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
 
@@ -112,15 +171,34 @@ export class AuthService {
   private async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-    
-    // In a real app we might update the specific session, but for here we can manage it simplified
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // ── Housekeeping: prune expired sessions on every login/refresh ────────
+    await this.prisma.userSession.deleteMany({
+      where: { userId, expiresAt: { lt: new Date() } },
+    });
+
+    // ── Cap: keep at most 5 active sessions (delete oldest first) ──────────
+    const MAX_SESSIONS = 5;
+    const sessions = await this.prisma.userSession.findMany({
+      where: { userId, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (sessions.length >= MAX_SESSIONS) {
+      const toDelete = sessions.slice(0, sessions.length - MAX_SESSIONS + 1);
+      await this.prisma.userSession.deleteMany({
+        where: { id: { in: toDelete.map(s => s.id) } },
+      });
+    }
+
+    // ── Create new session ────────────────────────────────────────────────
     await this.prisma.userSession.create({
       data: {
         userId,
         refreshTokenHash: hashedRefreshToken,
         expiresAt,
-      }
+      },
     });
   }
 }

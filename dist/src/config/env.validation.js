@@ -44,7 +44,7 @@ exports.validationSchema = Joi.object({
     JWT_EXPIRES_IN: Joi.string().default('15m'),
     REFRESH_TOKEN_SECRET: Joi.string().min(32).required(),
     REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('7d'),
-    REDIS_URL: Joi.string().required(),
+    REDIS_URL: Joi.string().optional().allow('').default('redis://localhost:6379'),
     PAYSTACK_SECRET_KEY: Joi.string().required(),
     PAYSTACK_PUBLIC_KEY: Joi.string().required(),
     PAYSTACK_WEBHOOK_SECRET: Joi.string().optional().allow(''),

@@ -45,6 +45,11 @@ exports.AppModule = AppModule = __decorate([
                     ttl: parseInt(process.env.THROTTLE_TTL || '60') * 1000,
                     limit: parseInt(process.env.THROTTLE_LIMIT || '60'),
                 },
+                {
+                    name: 'auth',
+                    ttl: 60_000,
+                    limit: parseInt(process.env.AUTH_THROTTLE_LIMIT || '5'),
+                },
             ]),
             schedule_1.ScheduleModule.forRoot(),
             terminus_1.TerminusModule,

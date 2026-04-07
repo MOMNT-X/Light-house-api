@@ -2,13 +2,15 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 export declare class AuthService {
     private usersService;
     private jwtService;
     private configService;
     private prisma;
-    constructor(usersService: UsersService, jwtService: JwtService, configService: ConfigService, prisma: PrismaService);
+    private mailService;
+    constructor(usersService: UsersService, jwtService: JwtService, configService: ConfigService, prisma: PrismaService, mailService: MailService);
     signup(signupDto: SignupDto): Promise<{
         accessToken: string;
         refreshToken: string;
@@ -22,6 +24,8 @@ export declare class AuthService {
             emailVerified: boolean;
             isActive: boolean;
             avatarUrl: string | null;
+            passwordResetToken: string | null;
+            passwordResetExpires: Date | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -40,6 +44,8 @@ export declare class AuthService {
             emailVerified: boolean;
             isActive: boolean;
             avatarUrl: string | null;
+            passwordResetToken: string | null;
+            passwordResetExpires: Date | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -50,6 +56,8 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: string;
     }>;
+    forgotPassword(email: string): Promise<void>;
+    resetPassword(email: string, token: string, newPassword: string): Promise<void>;
     private generateTokens;
     private updateRefreshToken;
 }

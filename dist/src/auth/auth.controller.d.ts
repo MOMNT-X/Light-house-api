@@ -15,6 +15,8 @@ export declare class AuthController {
             emailVerified: boolean;
             isActive: boolean;
             avatarUrl: string | null;
+            passwordResetToken: string | null;
+            passwordResetExpires: Date | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -32,6 +34,8 @@ export declare class AuthController {
             emailVerified: boolean;
             isActive: boolean;
             avatarUrl: string | null;
+            passwordResetToken: string | null;
+            passwordResetExpires: Date | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -45,6 +49,9 @@ export declare class AuthController {
         accessToken: string;
     }>;
     forgotPassword(email: string): Promise<{
+        message: string;
+    }>;
+    resetPassword(body: any): Promise<{
         message: string;
     }>;
 }
