@@ -10,6 +10,7 @@ export default defineConfig({
     seed: 'npx ts-node prisma/seed.ts',
   },
   datasource: {
-    url: process.env["DIRECT_URL"],
+    url: process.env["DIRECT_URL"]!,         // direct postgres URL for migrations/push
+    accelerateUrl: process.env["DATABASE_URL"], // prisma:// accelerate URL for queries
   },
 });
