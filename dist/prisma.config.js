@@ -10,7 +10,6 @@ exports.default = (0, config_1.defineConfig)({
     },
     datasource: {
         url: process.env["DIRECT_URL"],
-        accelerateUrl: process.env["DATABASE_URL"],
     },
 });
 //# sourceMappingURL=prisma.config.js.map
