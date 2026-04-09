@@ -1,4 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 import { Public } from '../common/decorators/public.decorator';
@@ -12,16 +13,16 @@ export class AuthController {
 
   @Public()
   @Post('signup')
+  @Throttle({ auth: { ttl: 60_000, limit: 5 } })
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() signupDto: SignupDto, @Res({ passthrough: true }) res: Response) {
     const { user, accessToken, refreshToken } = await this.authService.signup(signupDto);
     
-    // Store refresh token in an HTTP-Only cookie to prevent XSS
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return { user, accessToken };
@@ -29,6 +30,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @Throttle({ auth: { ttl: 60_000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const { user, accessToken, refreshToken } = await this.authService.login(loginDto);
@@ -63,14 +65,12 @@ export class AuthController {
     }
 
     try {
-      // Decode JWT simply to get the subject without full verification here 
-      // (The service does DB verification against bcrypt hash anyway)
-      // Actually we'll need to parse the token to extract the sub safely:
+      // Decode JWT payload to extract sub (userId)
       const base64Url = rfToken.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
+      const jsonPayload = decodeURIComponent(
+        atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''),
+      );
       const sub = JSON.parse(jsonPayload).sub;
 
       const { accessToken, refreshToken } = await this.authService.refreshTokens(sub, rfToken);
@@ -91,9 +91,23 @@ export class AuthController {
 
   @Public()
   @Post('forgot-password')
+  @Throttle({ auth: { ttl: 60_000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body('email') email: string) {
-    // TODO: Implement actual email sending logic
+    await this.authService.forgotPassword(email);
     return { message: 'If an account exists, a password reset email has been sent.' };
+  }
+
+  @Public()
+  @Post('reset-password')
+  @Throttle({ auth: { ttl: 60_000, limit: 5 } })
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: any) {
+    const { email, token, newPassword } = body;
+    if (!email || !token || !newPassword) {
+      throw new UnauthorizedException('Missing required fields for reset');
+    }
+    await this.authService.resetPassword(email, token, newPassword);
+    return { message: 'Password has been successfully reset. You can now login.' };
   }
 }

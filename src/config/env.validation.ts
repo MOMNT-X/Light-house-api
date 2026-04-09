@@ -15,8 +15,8 @@ export const validationSchema = Joi.object({
   REFRESH_TOKEN_SECRET: Joi.string().min(32).required(),
   REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('7d'),
 
-  // Redis
-  REDIS_URL: Joi.string().required(),
+  // Redis (optional — used only for Bull queues; app runs without it)
+  REDIS_URL: Joi.string().optional().allow('').default('redis://localhost:6379'),
 
   // Paystack
   PAYSTACK_SECRET_KEY: Joi.string().required(),

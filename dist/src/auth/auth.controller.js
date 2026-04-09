@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const auth_service_1 = require("./auth.service");
 const auth_dto_1 = require("./dto/auth.dto");
 const public_decorator_1 = require("../common/decorators/public.decorator");
@@ -57,9 +58,7 @@ let AuthController = class AuthController {
         try {
             const base64Url = rfToken.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             const sub = JSON.parse(jsonPayload).sub;
             const { accessToken, refreshToken } = await this.authService.refreshTokens(sub, rfToken);
             res.cookie('refresh_token', refreshToken, {
@@ -76,13 +75,23 @@ let AuthController = class AuthController {
         }
     }
     async forgotPassword(email) {
+        await this.authService.forgotPassword(email);
         return { message: 'If an account exists, a password reset email has been sent.' };
+    }
+    async resetPassword(body) {
+        const { email, token, newPassword } = body;
+        if (!email || !token || !newPassword) {
+            throw new common_1.UnauthorizedException('Missing required fields for reset');
+        }
+        await this.authService.resetPassword(email, token, newPassword);
+        return { message: 'Password has been successfully reset. You can now login.' };
     }
 };
 exports.AuthController = AuthController;
 __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Post)('signup'),
+    (0, throttler_1.Throttle)({ auth: { ttl: 60_000, limit: 5 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
@@ -93,6 +102,7 @@ __decorate([
 __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Post)('login'),
+    (0, throttler_1.Throttle)({ auth: { ttl: 60_000, limit: 5 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
@@ -123,12 +133,23 @@ __decorate([
 __decorate([
     (0, public_decorator_1.Public)(),
     (0, common_1.Post)('forgot-password'),
+    (0, throttler_1.Throttle)({ auth: { ttl: 60_000, limit: 5 } }),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)('email')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('reset-password'),
+    (0, throttler_1.Throttle)({ auth: { ttl: 60_000, limit: 5 } }),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

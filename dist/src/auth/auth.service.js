@@ -48,18 +48,22 @@ const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
 const users_service_1 = require("../users/users.service");
 const prisma_service_1 = require("../prisma/prisma.service");
+const mail_service_1 = require("../mail/mail.service");
 const bcrypt = __importStar(require("bcrypt"));
+const crypto = __importStar(require("crypto"));
 const client_1 = require("@prisma/client");
 let AuthService = class AuthService {
     usersService;
     jwtService;
     configService;
     prisma;
-    constructor(usersService, jwtService, configService, prisma) {
+    mailService;
+    constructor(usersService, jwtService, configService, prisma, mailService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
         this.configService = configService;
         this.prisma = prisma;
+        this.mailService = mailService;
     }
     async signup(signupDto) {
         const existingUser = await this.usersService.findByEmail(signupDto.email);
@@ -122,6 +126,48 @@ let AuthService = class AuthService {
         await this.updateRefreshToken(user.id, tokens.refreshToken);
         return tokens;
     }
+    async forgotPassword(email) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user)
+            return;
+        const token = crypto.randomBytes(32).toString('hex');
+        const tokenHash = await bcrypt.hash(token, 10);
+        const expires = new Date();
+        expires.setHours(expires.getHours() + 1);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                passwordResetToken: tokenHash,
+                passwordResetExpires: expires,
+            },
+        });
+        const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:5173';
+        const resetLink = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+        await this.mailService.sendPasswordResetEmail(user.email, resetLink);
+    }
+    async resetPassword(email, token, newPassword) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user || !user.passwordResetToken || !user.passwordResetExpires) {
+            throw new common_1.BadRequestException('Invalid or expired reset token');
+        }
+        if (new Date() > user.passwordResetExpires) {
+            throw new common_1.BadRequestException('Reset token has expired');
+        }
+        const isValid = await bcrypt.compare(token, user.passwordResetToken);
+        if (!isValid) {
+            throw new common_1.BadRequestException('Invalid or expired reset token');
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                passwordHash: hashedPassword,
+                passwordResetToken: null,
+                passwordResetExpires: null,
+            },
+        });
+        await this.logout(user.id);
+    }
     async generateTokens(userId, email, role) {
         const payload = { sub: userId, email, role };
         const [accessToken, refreshToken] = await Promise.all([
@@ -140,12 +186,26 @@ let AuthService = class AuthService {
         const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
+        await this.prisma.userSession.deleteMany({
+            where: { userId, expiresAt: { lt: new Date() } },
+        });
+        const MAX_SESSIONS = 5;
+        const sessions = await this.prisma.userSession.findMany({
+            where: { userId, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: 'asc' },
+        });
+        if (sessions.length >= MAX_SESSIONS) {
+            const toDelete = sessions.slice(0, sessions.length - MAX_SESSIONS + 1);
+            await this.prisma.userSession.deleteMany({
+                where: { id: { in: toDelete.map(s => s.id) } },
+            });
+        }
         await this.prisma.userSession.create({
             data: {
                 userId,
                 refreshTokenHash: hashedRefreshToken,
                 expiresAt,
-            }
+            },
         });
     }
 };
@@ -155,6 +215,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService,
         config_1.ConfigService,
-        prisma_service_1.PrismaService])
+        prisma_service_1.PrismaService,
+        mail_service_1.MailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

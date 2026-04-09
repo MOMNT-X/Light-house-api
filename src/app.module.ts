@@ -39,6 +39,12 @@ import { AuditModule } from './audit/audit.module';
         ttl: parseInt(process.env.THROTTLE_TTL || '60') * 1000,
         limit: parseInt(process.env.THROTTLE_LIMIT || '60'),
       },
+      {
+        // Stricter tier for auth endpoints — 5 attempts per minute
+        name: 'auth',
+        ttl: 60_000,
+        limit: parseInt(process.env.AUTH_THROTTLE_LIMIT || '5'),
+      },
     ]),
 
     // ── Scheduled jobs ──────────────────────────────

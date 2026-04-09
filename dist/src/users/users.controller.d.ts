@@ -13,6 +13,8 @@ export declare class UsersController {
         emailVerified: boolean;
         isActive: boolean;
         avatarUrl: string | null;
+        passwordResetToken: string | null;
+        passwordResetExpires: Date | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
@@ -27,6 +29,8 @@ export declare class UsersController {
         emailVerified: boolean;
         isActive: boolean;
         avatarUrl: string | null;
+        passwordResetToken: string | null;
+        passwordResetExpires: Date | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
