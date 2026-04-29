@@ -48,6 +48,7 @@ const common_1 = require("@nestjs/common");
 const orders_service_1 = require("../orders/orders.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const prisma_service_1 = require("../prisma/prisma.service");
+const mail_service_1 = require("../mail/mail.service");
 const config_1 = require("@nestjs/config");
 const client_1 = require("@prisma/client");
 const crypto = __importStar(require("crypto"));
@@ -55,12 +56,14 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
     ordersService;
     notificationsService;
     prisma;
+    mailService;
     configService;
     logger = new common_1.Logger(WebhooksService_1.name);
-    constructor(ordersService, notificationsService, prisma, configService) {
+    constructor(ordersService, notificationsService, prisma, mailService, configService) {
         this.ordersService = ordersService;
         this.notificationsService = notificationsService;
         this.prisma = prisma;
+        this.mailService = mailService;
         this.configService = configService;
     }
     async handlePaystackWebhook(rawBody, signature) {
@@ -134,6 +137,17 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
                 const addressStr = order.address
                     ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
                     : 'N/A';
+                const user = await this.prisma.user.findUnique({
+                    where: { id: order.userId },
+                    select: { email: true, firstName: true, phone: true },
+                });
+                if (user?.email) {
+                    await this.mailService.sendOrderConfirmationEmail(user.email, {
+                        ...order,
+                        userFirstName: user.firstName,
+                        addressStr,
+                    });
+                }
                 await this.notificationsService.sendDiscordNotification('', [
                     {
                         title: '🎉 New Order Confirmed (Webhook)',
@@ -145,7 +159,8 @@ let WebhooksService = WebhooksService_1 = class WebhooksService {
                             { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
                             { name: 'Items', value: itemsList || 'No items listed', inline: false },
                             { name: 'Delivery Address', value: addressStr, inline: false },
-                            { name: 'User ID', value: order.userId, inline: false },
+                            { name: 'User ID', value: order.userId, inline: true },
+                            { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
                         ],
                         timestamp: new Date().toISOString(),
                     }
@@ -173,6 +188,7 @@ exports.WebhooksService = WebhooksService = WebhooksService_1 = __decorate([
     __metadata("design:paramtypes", [orders_service_1.OrdersService,
         notifications_service_1.NotificationsService,
         prisma_service_1.PrismaService,
+        mail_service_1.MailService,
         config_1.ConfigService])
 ], WebhooksService);
 //# sourceMappingURL=webhooks.service.js.map

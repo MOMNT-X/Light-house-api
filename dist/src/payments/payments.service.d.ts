@@ -1,15 +1,17 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 export declare class PaymentsService {
     private prisma;
     private ordersService;
     private notificationsService;
+    private mailService;
     private configService;
     private readonly logger;
     private readonly paystackBaseUrl;
-    constructor(prisma: PrismaService, ordersService: OrdersService, notificationsService: NotificationsService, configService: ConfigService);
+    constructor(prisma: PrismaService, ordersService: OrdersService, notificationsService: NotificationsService, mailService: MailService, configService: ConfigService);
     private get secretKey();
     private get opayMerchantId();
     private get opayPrivateKey();

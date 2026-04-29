@@ -36,7 +36,7 @@ async function bootstrap() {
     app.useGlobalInterceptors(new response_interceptor_1.ResponseInterceptor());
     const port = process.env.PORT || 3001;
     await app.listen(port, '0.0.0.0');
-    console.log(`🚀 Light House API running on http://localhost:${port}/api/v1`);
+    console.log(`🚀 Bogaad API running on http://localhost:${port}/api/v1`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

@@ -15,19 +15,22 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const orders_service_1 = require("../orders/orders.service");
 const notifications_service_1 = require("../notifications/notifications.service");
+const mail_service_1 = require("../mail/mail.service");
 const client_1 = require("@prisma/client");
 const config_1 = require("@nestjs/config");
 let PaymentsService = PaymentsService_1 = class PaymentsService {
     prisma;
     ordersService;
     notificationsService;
+    mailService;
     configService;
     logger = new common_1.Logger(PaymentsService_1.name);
     paystackBaseUrl = 'https://api.paystack.co';
-    constructor(prisma, ordersService, notificationsService, configService) {
+    constructor(prisma, ordersService, notificationsService, mailService, configService) {
         this.prisma = prisma;
         this.ordersService = ordersService;
         this.notificationsService = notificationsService;
+        this.mailService = mailService;
         this.configService = configService;
     }
     get secretKey() {
@@ -185,6 +188,17 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         const addressStr = order.address
             ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
             : 'N/A';
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, firstName: true, phone: true },
+        });
+        if (user?.email) {
+            await this.mailService.sendOrderConfirmationEmail(user.email, {
+                ...order,
+                userFirstName: user.firstName,
+                addressStr,
+            });
+        }
         await this.notificationsService.sendDiscordNotification('', [
             {
                 title: '🎉 New Order Confirmed',
@@ -196,7 +210,8 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                     { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
                     { name: 'Items', value: itemsList || 'No items listed', inline: false },
                     { name: 'Delivery Address', value: addressStr, inline: false },
-                    { name: 'User ID', value: userId, inline: false },
+                    { name: 'User ID', value: userId, inline: true },
+                    { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
                 ],
                 timestamp: new Date().toISOString(),
             }
@@ -233,6 +248,17 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 const addressStr = order.address
                     ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
                     : 'N/A';
+                const user = await this.prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { email: true, firstName: true, phone: true },
+                });
+                if (user?.email) {
+                    await this.mailService.sendOrderConfirmationEmail(user.email, {
+                        ...order,
+                        userFirstName: user.firstName,
+                        addressStr,
+                    });
+                }
                 await this.notificationsService.sendDiscordNotification('', [
                     {
                         title: '🎉 New Order Confirmed (Local Dev Sandbox)',
@@ -244,7 +270,8 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                             { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
                             { name: 'Items', value: itemsList || 'No items listed', inline: false },
                             { name: 'Delivery Address', value: addressStr, inline: false },
-                            { name: 'User ID', value: userId, inline: false },
+                            { name: 'User ID', value: userId, inline: true },
+                            { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
                         ],
                         timestamp: new Date().toISOString(),
                     }
@@ -377,6 +404,7 @@ exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         orders_service_1.OrdersService,
         notifications_service_1.NotificationsService,
+        mail_service_1.MailService,
         config_1.ConfigService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map
