@@ -2,6 +2,7 @@ import { Injectable, Logger, UnauthorizedException, BadRequestException } from '
 import { OrdersService } from '../orders/orders.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { PaymentStatus, OrderStatus } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -14,6 +15,7 @@ export class WebhooksService {
     private ordersService: OrdersService,
     private notificationsService: NotificationsService,
     private prisma: PrismaService,
+    private mailService: MailService,
     private configService: ConfigService,
   ) {}
 
@@ -119,6 +121,19 @@ export class WebhooksService {
           ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
           : 'N/A';
 
+        const user = await this.prisma.user.findUnique({
+          where: { id: order.userId },
+          select: { email: true, firstName: true, phone: true },
+        });
+
+        if (user?.email) {
+          await this.mailService.sendOrderConfirmationEmail(user.email, {
+            ...order,
+            userFirstName: user.firstName,
+            addressStr,
+          });
+        }
+
         await this.notificationsService.sendDiscordNotification('', [
           {
             title: '🎉 New Order Confirmed (Webhook)',
@@ -130,7 +145,8 @@ export class WebhooksService {
               { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
               { name: 'Items', value: itemsList || 'No items listed', inline: false },
               { name: 'Delivery Address', value: addressStr, inline: false },
-              { name: 'User ID', value: order.userId, inline: false },
+              { name: 'User ID', value: order.userId, inline: true },
+              { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
             ],
             timestamp: new Date().toISOString(),
           }

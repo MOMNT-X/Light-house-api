@@ -13,12 +13,13 @@ const webhooks_controller_1 = require("./webhooks.controller");
 const orders_module_1 = require("../orders/orders.module");
 const notifications_module_1 = require("../notifications/notifications.module");
 const prisma_module_1 = require("../prisma/prisma.module");
+const mail_module_1 = require("../mail/mail.module");
 let WebhooksModule = class WebhooksModule {
 };
 exports.WebhooksModule = WebhooksModule;
 exports.WebhooksModule = WebhooksModule = __decorate([
     (0, common_1.Module)({
-        imports: [orders_module_1.OrdersModule, notifications_module_1.NotificationsModule, prisma_module_1.PrismaModule],
+        imports: [orders_module_1.OrdersModule, notifications_module_1.NotificationsModule, prisma_module_1.PrismaModule, mail_module_1.MailModule],
         controllers: [webhooks_controller_1.WebhooksController],
         providers: [webhooks_service_1.WebhooksService],
     })

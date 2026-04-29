@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { OrdersService } from '../orders/orders.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import { PaymentStatus, OrderStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
@@ -20,6 +21,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private ordersService: OrdersService,
     private notificationsService: NotificationsService,
+    private mailService: MailService,
     private configService: ConfigService,
   ) {}
 
@@ -237,6 +239,19 @@ export class PaymentsService {
       ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
       : 'N/A';
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, firstName: true, phone: true },
+    });
+
+    if (user?.email) {
+      await this.mailService.sendOrderConfirmationEmail(user.email, {
+        ...order,
+        userFirstName: user.firstName,
+        addressStr,
+      });
+    }
+
     await this.notificationsService.sendDiscordNotification('', [
       {
         title: '🎉 New Order Confirmed',
@@ -248,7 +263,8 @@ export class PaymentsService {
           { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
           { name: 'Items', value: itemsList || 'No items listed', inline: false },
           { name: 'Delivery Address', value: addressStr, inline: false },
-          { name: 'User ID', value: userId, inline: false },
+          { name: 'User ID', value: userId, inline: true },
+          { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
         ],
         timestamp: new Date().toISOString(),
       }
@@ -298,6 +314,19 @@ export class PaymentsService {
             ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
             : 'N/A';
 
+          const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, firstName: true, phone: true },
+          });
+
+          if (user?.email) {
+            await this.mailService.sendOrderConfirmationEmail(user.email, {
+              ...order,
+              userFirstName: user.firstName,
+              addressStr,
+            });
+          }
+
           await this.notificationsService.sendDiscordNotification('', [
             {
               title: '🎉 New Order Confirmed (Local Dev Sandbox)',
@@ -309,7 +338,8 @@ export class PaymentsService {
                 { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
                 { name: 'Items', value: itemsList || 'No items listed', inline: false },
                 { name: 'Delivery Address', value: addressStr, inline: false },
-                { name: 'User ID', value: userId, inline: false },
+                { name: 'User ID', value: userId, inline: true },
+                { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
               ],
               timestamp: new Date().toISOString(),
             }
