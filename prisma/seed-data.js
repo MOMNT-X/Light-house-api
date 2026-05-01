@@ -193,7 +193,7 @@ const data = [
     "bannerUrl": "/Jollof Rice & Chicken.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 120000,
+    "deliveryFee": 50000,
     "minOrder": 200000,
     "categories": [
       {
@@ -399,7 +399,7 @@ const data = [
     "bannerUrl": "/noodles.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 250000,
     "categories": [
       {
@@ -757,7 +757,7 @@ const data = [
     "bannerUrl": "/Nigerian Native Jollof Rice.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 150000,
+    "deliveryFee": 50000,
     "minOrder": 200000,
     "categories": [
       {
@@ -969,7 +969,7 @@ const data = [
     "bannerUrl": "/Top 21 Nigerian Foods That Will Blow Your Taste Buds - Chef's Pencil.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 250000,
     "categories": [
       {
@@ -1259,8 +1259,8 @@ const data = [
     "bannerUrl": "/Top 21 Nigerian Foods That Will Blow Your Taste Buds - Chef's Pencil.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
-    "minOrder": 100000,
+    "deliveryFee": 50000,
+    "minOrder": 200000,
     "categories": [
       {
         "name": "Food Per Portion",
@@ -1537,7 +1537,7 @@ const data = [
     "bannerUrl": "/Making Nigerian Afang Soup Recipe - Dream Africa.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 150000,
     "categories": [
       {

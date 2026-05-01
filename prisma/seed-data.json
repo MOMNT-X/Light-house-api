@@ -191,7 +191,7 @@
     "bannerUrl": "/Jollof Rice & Chicken.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 120000,
+    "deliveryFee": 50000,
     "minOrder": 200000,
     "categories": [
       {
@@ -397,7 +397,7 @@
     "bannerUrl": "/noodles.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 250000,
     "categories": [
       {
@@ -755,7 +755,7 @@
     "bannerUrl": "/Nigerian Native Jollof Rice.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 150000,
+    "deliveryFee": 50000,
     "minOrder": 200000,
     "categories": [
       {
@@ -967,7 +967,7 @@
     "bannerUrl": "/Top 21 Nigerian Foods That Will Blow Your Taste Buds - Chef's Pencil.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 250000,
     "categories": [
       {
@@ -1257,7 +1257,7 @@
     "bannerUrl": "/Top 21 Nigerian Foods That Will Blow Your Taste Buds - Chef's Pencil.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 100000,
     "categories": [
       {
@@ -1511,7 +1511,7 @@
     "bannerUrl": "/Making Nigerian Afang Soup Recipe - Dream Africa.jfif",
     "isActive": true,
     "isOpen": true,
-    "deliveryFee": 100000,
+    "deliveryFee": 50000,
     "minOrder": 150000,
     "categories": [
       {
