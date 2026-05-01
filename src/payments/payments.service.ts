@@ -382,7 +382,7 @@ export class PaymentsService {
     const crypto = await import('crypto');
 
     // OPay Cashier expects amount in NAIRA (not kobo), string formatted
-    const amountInNaira = (order.total / 100).toFixed(2);
+    const amountInNaira = (order.total ).toFixed(2);
 
     // OPay V3 Cashier requires a flattened payload structure
     const payload = {
