@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -48,7 +53,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -76,10 +84,13 @@ export class AuthService {
     const sessions = await this.prisma.userSession.findMany({
       where: { userId, expiresAt: { gt: new Date() } },
     });
-    
+
     let validSession = null;
     for (const session of sessions) {
-      const isMatch = await bcrypt.compare(refreshToken, session.refreshTokenHash);
+      const isMatch = await bcrypt.compare(
+        refreshToken,
+        session.refreshTokenHash,
+      );
       if (isMatch) {
         validSession = session;
         break;
@@ -102,7 +113,7 @@ export class AuthService {
     // Generate token
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = await bcrypt.hash(token, 10);
-    
+
     // Set 1-hour expiration
     const expires = new Date();
     expires.setHours(expires.getHours() + 1);
@@ -115,9 +126,10 @@ export class AuthService {
       },
     });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
     const resetLink = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
-    
+
     await this.mailService.sendPasswordResetEmail(user.email, resetLink);
   }
 
@@ -146,7 +158,7 @@ export class AuthService {
         passwordResetExpires: null,
       },
     });
-    
+
     // Revoke all existing sessions for security
     await this.logout(user.id);
   }
@@ -157,11 +169,16 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: '15m',
+        expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ||
+          '12h') as any,
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: '7d',
+        secret:
+          this.configService.get<string>('JWT_REFRESH_SECRET') ||
+          this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+        expiresIn: (this.configService.get<string>(
+          'REFRESH_TOKEN_EXPIRES_IN',
+        ) || '3d') as any,
       }),
     ]);
 
@@ -170,8 +187,20 @@ export class AuthService {
 
   private async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    // Parse REFRESH_TOKEN_EXPIRES_IN (e.g., '3d', '7d')
+    const expiresIn =
+      this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') || '3d';
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const amount = parseInt(expiresIn);
+    const unit = expiresIn.slice(-1).toLowerCase();
+
+    if (unit === 'd') expiresAt.setDate(expiresAt.getDate() + amount);
+    else if (unit === 'h') expiresAt.setHours(expiresAt.getHours() + amount);
+    else if (unit === 'm')
+      expiresAt.setMinutes(expiresAt.getMinutes() + amount);
+    else expiresAt.setDate(expiresAt.getDate() + (isNaN(amount) ? 3 : amount)); // Default to 3 days if parsing fails
 
     // ── Housekeeping: prune expired sessions on every login/refresh ────────
     await this.prisma.userSession.deleteMany({
@@ -188,7 +217,7 @@ export class AuthService {
     if (sessions.length >= MAX_SESSIONS) {
       const toDelete = sessions.slice(0, sessions.length - MAX_SESSIONS + 1);
       await this.prisma.userSession.deleteMany({
-        where: { id: { in: toDelete.map(s => s.id) } },
+        where: { id: { in: toDelete.map((s) => s.id) } },
       });
     }
 

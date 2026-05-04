@@ -1,4 +1,5 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
@@ -9,7 +10,22 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  private getCookieMaxAge(): number {
+    const expiresIn = this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') || '3d';
+    const amount = parseInt(expiresIn);
+    const unit = expiresIn.slice(-1).toLowerCase();
+
+    if (unit === 'd') return amount * 24 * 60 * 60 * 1000;
+    if (unit === 'h') return amount * 60 * 60 * 1000;
+    if (unit === 'm') return amount * 60 * 1000;
+    return 3 * 24 * 60 * 60 * 1000; // default 3 days
+  }
+
 
   @Public()
   @Post('signup')
@@ -21,8 +37,8 @@ export class AuthController {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'none',
+      maxAge: this.getCookieMaxAge(),
     });
 
     return { user, accessToken };
@@ -38,8 +54,8 @@ export class AuthController {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'none',
+      maxAge: this.getCookieMaxAge(),
     });
 
     return { user, accessToken };
@@ -50,7 +66,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@CurrentUser() user: any, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(user.userId);
-    res.clearCookie('refresh_token');
+    res.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'none',
+    });
     return { message: 'Logged out successfully' };
   }
 
@@ -78,13 +98,17 @@ export class AuthController {
       res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: 'none',
+        maxAge: this.getCookieMaxAge(),
       });
 
       return { accessToken };
     } catch {
-      res.clearCookie('refresh_token');
+      res.clearCookie('refresh_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

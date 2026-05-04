@@ -12,6 +12,9 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug'],
   });
 
+  // Enable trust proxy for secure cookies behind Railway load balancer
+  (app as any).set('trust proxy', 1);
+
   // ── Security ───────────────────────────────────────
   app.use(helmet());
   app.use(cookieParser());
