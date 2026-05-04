@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const throttler_1 = require("@nestjs/throttler");
 const auth_service_1 = require("./auth.service");
 const auth_dto_1 = require("./dto/auth.dto");
@@ -22,16 +23,30 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let AuthController = class AuthController {
     authService;
-    constructor(authService) {
+    configService;
+    constructor(authService, configService) {
         this.authService = authService;
+        this.configService = configService;
+    }
+    getCookieMaxAge() {
+        const expiresIn = this.configService.get('REFRESH_TOKEN_EXPIRES_IN') || '3d';
+        const amount = parseInt(expiresIn);
+        const unit = expiresIn.slice(-1).toLowerCase();
+        if (unit === 'd')
+            return amount * 24 * 60 * 60 * 1000;
+        if (unit === 'h')
+            return amount * 60 * 60 * 1000;
+        if (unit === 'm')
+            return amount * 60 * 1000;
+        return 3 * 24 * 60 * 60 * 1000;
     }
     async signup(signupDto, res) {
         const { user, accessToken, refreshToken } = await this.authService.signup(signupDto);
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            sameSite: 'none',
+            maxAge: this.getCookieMaxAge(),
         });
         return { user, accessToken };
     }
@@ -40,14 +55,18 @@ let AuthController = class AuthController {
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            sameSite: 'none',
+            maxAge: this.getCookieMaxAge(),
         });
         return { user, accessToken };
     }
     async logout(user, res) {
         await this.authService.logout(user.userId);
-        res.clearCookie('refresh_token');
+        res.clearCookie('refresh_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none',
+        });
         return { message: 'Logged out successfully' };
     }
     async refresh(req, res) {
@@ -64,13 +83,17 @@ let AuthController = class AuthController {
             res.cookie('refresh_token', refreshToken, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                sameSite: 'none',
+                maxAge: this.getCookieMaxAge(),
             });
             return { accessToken };
         }
         catch {
-            res.clearCookie('refresh_token');
+            res.clearCookie('refresh_token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'none',
+            });
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
     }
@@ -152,6 +175,7 @@ __decorate([
 ], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [auth_service_1.AuthService])
+    __metadata("design:paramtypes", [auth_service_1.AuthService,
+        config_1.ConfigService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

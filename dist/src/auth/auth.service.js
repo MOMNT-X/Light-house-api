@@ -173,19 +173,29 @@ let AuthService = class AuthService {
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
                 secret: this.configService.get('JWT_SECRET'),
-                expiresIn: '15m',
+                expiresIn: (this.configService.get('JWT_EXPIRES_IN') || '12h'),
             }),
             this.jwtService.signAsync(payload, {
-                secret: this.configService.get('JWT_REFRESH_SECRET'),
-                expiresIn: '7d',
+                secret: this.configService.get('JWT_REFRESH_SECRET') || this.configService.get('REFRESH_TOKEN_SECRET'),
+                expiresIn: (this.configService.get('REFRESH_TOKEN_EXPIRES_IN') || '3d'),
             }),
         ]);
         return { accessToken, refreshToken };
     }
     async updateRefreshToken(userId, refreshToken) {
         const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+        const expiresIn = this.configService.get('REFRESH_TOKEN_EXPIRES_IN') || '3d';
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
+        const amount = parseInt(expiresIn);
+        const unit = expiresIn.slice(-1).toLowerCase();
+        if (unit === 'd')
+            expiresAt.setDate(expiresAt.getDate() + amount);
+        else if (unit === 'h')
+            expiresAt.setHours(expiresAt.getHours() + amount);
+        else if (unit === 'm')
+            expiresAt.setMinutes(expiresAt.getMinutes() + amount);
+        else
+            expiresAt.setDate(expiresAt.getDate() + (isNaN(amount) ? 3 : amount));
         await this.prisma.userSession.deleteMany({
             where: { userId, expiresAt: { lt: new Date() } },
         });

@@ -1,9 +1,12 @@
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto } from './dto/auth.dto';
 import type { Request, Response } from 'express';
 export declare class AuthController {
     private readonly authService;
-    constructor(authService: AuthService);
+    private readonly configService;
+    constructor(authService: AuthService, configService: ConfigService);
+    private getCookieMaxAge;
     signup(signupDto: SignupDto, res: Response): Promise<{
         user: {
             id: string;
