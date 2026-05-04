@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+
+  constructor(private configService: ConfigService) {}
 
   async sendEmail(to: string, subject: string, body: string) {
     this.logger.log(`[EMAIL] To: ${to} | Subj: ${subject} | Body: ${body}`);
@@ -23,7 +26,7 @@ export class NotificationsService {
   }
 
   async sendDiscordNotification(content: string, embeds?: any[]) {
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    const webhookUrl = this.configService.get<string>('DISCORD_WEBHOOK_URL') || process.env.DISCORD_WEBHOOK_URL;
     if (!webhookUrl) {
       this.logger.warn('DISCORD_WEBHOOK_URL not set — skipping Discord notification');
       return false;

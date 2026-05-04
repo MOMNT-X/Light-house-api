@@ -43,8 +43,8 @@ export const validationSchema = Joi.object({
   SUPABASE_SERVICE_KEY: Joi.string().required(),
 
   // Frontend
-  FRONTEND_URL: Joi.string().uri().default('http://localhost:3000'),
-  ALLOWED_ORIGINS: Joi.string().default('http://localhost:3000'),
+  FRONTEND_URL: Joi.string().uri().default('https://bogaad.site'),
+  ALLOWED_ORIGINS: Joi.string().default('https://bogaad.site'),
 
   // Rate limiting
   THROTTLE_TTL: Joi.number().default(60),
