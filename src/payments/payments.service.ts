@@ -42,12 +42,18 @@ export class PaymentsService {
   }
 
   private get frontendUrl(): string {
-    return this.configService.get<string>('FRONTEND_URL') || 'https://bogaad.site';
+    return (
+      this.configService.get<string>('FRONTEND_URL') || 'https://bogaad.site'
+    );
   }
 
   // ─── Initialize Payment ────────────────────────────────────────────────────
 
-  async initiatePayment(userId: string, orderId: string, idempotencyKey: string) {
+  async initiatePayment(
+    userId: string,
+    orderId: string,
+    idempotencyKey: string,
+  ) {
     // 1. Fetch order and validate state
     const order = await this.ordersService.findOne(userId, orderId);
 
@@ -94,20 +100,25 @@ export class PaymentsService {
     }
 
     try {
-      const response = await fetch(`${this.paystackBaseUrl}/transaction/initialize`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.secretKey}`,
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${this.paystackBaseUrl}/transaction/initialize`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.secretKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(paystackPayload),
         },
-        body: JSON.stringify(paystackPayload),
-      });
+      );
 
       const responseData = await response.json();
 
       if (!responseData.status) {
         this.logger.error(`Paystack API error: ${responseData.message}`);
-        throw new BadRequestException(`Payment initialization failed: ${responseData.message}`);
+        throw new BadRequestException(
+          `Payment initialization failed: ${responseData.message}`,
+        );
       }
 
       authorizationUrl = responseData.data.authorization_url;
@@ -161,18 +172,24 @@ export class PaymentsService {
       const responseData = await response.json();
 
       if (!responseData.status) {
-        throw new BadRequestException(`Verification failed: ${responseData.message}`);
+        throw new BadRequestException(
+          `Verification failed: ${responseData.message}`,
+        );
       }
       paystackData = responseData.data;
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       this.logger.error('Failed to verify payment with Paystack', error);
-      throw new InternalServerErrorException('Payment verification unavailable');
+      throw new InternalServerErrorException(
+        'Payment verification unavailable',
+      );
     }
 
     // 2. Confirm transaction success from Paystack
     if (paystackData.status !== 'success') {
-      throw new BadRequestException(`Payment not successful. Paystack status: ${paystackData.status}`);
+      throw new BadRequestException(
+        `Payment not successful. Paystack status: ${paystackData.status}`,
+      );
     }
 
     // 3. Find the order via idempotency key (the reference we sent)
@@ -218,7 +235,11 @@ export class PaymentsService {
     });
 
     // 8. Update order status → CONFIRMED
-    await this.ordersService.updateStatus(order.id, OrderStatus.CONFIRMED, PaymentStatus.PAID);
+    await this.ordersService.updateStatus(
+      order.id,
+      OrderStatus.CONFIRMED,
+      PaymentStatus.PAID,
+    );
 
     // 9. Kick off automatic status progression (temporary until vendor dashboard is live)
     //    CONFIRMED → PREPARING (2min) → READY_FOR_DISPATCH (5min) → OUT_FOR_DELIVERY (15min) → DELIVERED (20min)
@@ -232,7 +253,10 @@ export class PaymentsService {
     );
 
     const itemsList = order.items
-      .map((i: any) => `${i.quantity}x ${i.name} (₦${(i.price / 100).toLocaleString()})`)
+      .map(
+        (i: any) =>
+          `${i.quantity}x ${i.name} (₦${(i.price / 100).toLocaleString()})`,
+      )
       .join('\n');
 
     const addressStr = order.address
@@ -256,18 +280,26 @@ export class PaymentsService {
       {
         title: '🎉 New Order Confirmed',
         description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been successfully paid.`,
-        color: 0x10B981,
+        color: 0x10b981,
         fields: [
-          { name: 'Amount', value: `₦${(order.total / 100).toFixed(2)}`, inline: true },
+          {
+            name: 'Amount',
+            value: `₦${(order.total / 100).toFixed(2)}`,
+            inline: true,
+          },
           { name: 'Provider', value: 'Paystack', inline: true },
           { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
-          { name: 'Items', value: itemsList || 'No items listed', inline: false },
+          {
+            name: 'Items',
+            value: itemsList || 'No items listed',
+            inline: false,
+          },
           { name: 'Delivery Address', value: addressStr, inline: false },
           { name: 'User ID', value: userId, inline: true },
           { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
         ],
         timestamp: new Date().toISOString(),
-      }
+      },
     ]);
 
     this.logger.log(`Payment verified and order ${order.id} confirmed`);
@@ -279,7 +311,10 @@ export class PaymentsService {
   async verifyOrderPayment(userId: string, orderId: string) {
     const order = await this.ordersService.findOne(userId, orderId);
 
-    if (order.status === OrderStatus.CONFIRMED || order.status !== OrderStatus.PAYMENT_PENDING) {
+    if (
+      order.status === OrderStatus.CONFIRMED ||
+      order.status !== OrderStatus.PAYMENT_PENDING
+    ) {
       return { success: true, orderId: order.id, status: order.status };
     }
 
@@ -295,58 +330,81 @@ export class PaymentsService {
       // Actively verify with Paystack
       return this.verifyPayment(userId, payment.providerRef);
     } else if (payment.provider === 'opay') {
-      // OPay relies on webhooks. Since local dev webhooks are tricky, 
+      // OPay relies on webhooks. Since local dev webhooks are tricky,
       // we inform the user to wait or we can simulate successful payment in local dev
       if (!this.paystackBaseUrl.includes('live')) {
-          this.logger.log('Local dev: Automatically confirming OPay payment');
-          await this.prisma.payment.update({
-            where: { id: payment.id },
-            data: { status: PaymentStatus.PAID, paidAt: new Date() }
+        this.logger.log('Local dev: Automatically confirming OPay payment');
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: PaymentStatus.PAID, paidAt: new Date() },
+        });
+        await this.ordersService.updateStatus(
+          order.id,
+          OrderStatus.CONFIRMED,
+          PaymentStatus.PAID,
+        );
+        this.ordersService.scheduleOrderProgression(order.id);
+
+        const itemsList = order.items
+          .map(
+            (i: any) =>
+              `${i.quantity}x ${i.name} (₦${(i.price / 100).toLocaleString()})`,
+          )
+          .join('\n');
+
+        const addressStr = order.address
+          ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
+          : 'N/A';
+
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, firstName: true, phone: true },
+        });
+
+        if (user?.email) {
+          await this.mailService.sendOrderConfirmationEmail(user.email, {
+            ...order,
+            userFirstName: user.firstName,
+            addressStr,
           });
-          await this.ordersService.updateStatus(order.id, OrderStatus.CONFIRMED, PaymentStatus.PAID);
-          this.ordersService.scheduleOrderProgression(order.id);
-          
-          const itemsList = order.items
-            .map((i: any) => `${i.quantity}x ${i.name} (₦${(i.price / 100).toLocaleString()})`)
-            .join('\n');
+        }
 
-          const addressStr = order.address
-            ? `${order.address.street}, ${order.address.city}, ${order.address.state}`
-            : 'N/A';
-
-          const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: { email: true, firstName: true, phone: true },
-          });
-
-          if (user?.email) {
-            await this.mailService.sendOrderConfirmationEmail(user.email, {
-              ...order,
-              userFirstName: user.firstName,
-              addressStr,
-            });
-          }
-
-          await this.notificationsService.sendDiscordNotification('', [
-            {
-              title: '🎉 New Order Confirmed (Local Dev Sandbox)',
-              description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been simulated as paid.`,
-              color: 0x10B981,
-              fields: [
-                { name: 'Amount', value: `₦${(order.total / 100).toFixed(2)}`, inline: true },
-                { name: 'Provider', value: 'OPay', inline: true },
-                { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
-                { name: 'Items', value: itemsList || 'No items listed', inline: false },
-                { name: 'Delivery Address', value: addressStr, inline: false },
-                { name: 'User ID', value: userId, inline: true },
-                { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
-              ],
-              timestamp: new Date().toISOString(),
-            }
-          ]);
-          return { success: true, orderId: order.id };
+        await this.notificationsService.sendDiscordNotification('', [
+          {
+            title: '🎉 New Order Confirmed (Local Dev Sandbox)',
+            description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been simulated as paid.`,
+            color: 0x10b981,
+            fields: [
+              {
+                name: 'Amount',
+                value: `₦${(order.total / 100).toFixed(2)}`,
+                inline: true,
+              },
+              { name: 'Provider', value: 'OPay', inline: true },
+              {
+                name: 'Vendor',
+                value: order.vendor?.name || 'N/A',
+                inline: false,
+              },
+              {
+                name: 'Items',
+                value: itemsList || 'No items listed',
+                inline: false,
+              },
+              { name: 'Delivery Address', value: addressStr, inline: false },
+              { name: 'User ID', value: userId, inline: true },
+              { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
+            ],
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        return { success: true, orderId: order.id };
       }
-      return { success: false, message: 'OPay payment status will update automatically via webhook.', orderId: order.id };
+      return {
+        success: false,
+        message: 'OPay payment status will update automatically via webhook.',
+        orderId: order.id,
+      };
     }
 
     return { success: false, message: 'Unverifiable payment provider' };
@@ -354,7 +412,11 @@ export class PaymentsService {
 
   // ─── OPay Cashier Initiate ─────────────────────────────────────────────────
 
-  async initiateOpayPayment(userId: string, orderId: string, idempotencyKey: string) {
+  async initiateOpayPayment(
+    userId: string,
+    orderId: string,
+    idempotencyKey: string,
+  ) {
     const order = await this.ordersService.findOne(userId, orderId);
 
     if (order.status !== OrderStatus.PAYMENT_PENDING) {
@@ -376,13 +438,15 @@ export class PaymentsService {
 
     if (!this.opayMerchantId || !this.opayPrivateKey) {
       this.logger.warn('OPay keys not set — cannot process OPay payment');
-      throw new BadRequestException('OPay payment is not available at this time');
+      throw new BadRequestException(
+        'OPay payment is not available at this time',
+      );
     }
 
     const crypto = await import('crypto');
 
     // OPay Cashier expects amount in NAIRA (not kobo), string formatted
-    const amountInNaira = (order.total ).toFixed(2);
+    const amountInNaira = order.total.toFixed(2);
 
     // OPay V3 Cashier requires a flattened payload structure
     const payload = {
@@ -395,7 +459,7 @@ export class PaymentsService {
       amount: amountInNaira,
       currency: 'NGN',
       payTypes: ['BalancePayment', 'BonusPayment', 'OWealth', 'CardPayment'],
-      payMethods: ['account', 'qrcode', "bankCard", "bankTransfer"],
+      payMethods: ['account', 'qrcode', 'bankCard', 'bankTransfer'],
       returnUrl: `${this.frontendUrl}/payment/success`,
       callbackUrl: `${this.frontendUrl}/payment/success`,
       cancelUrl: `${this.frontendUrl}/payment/failure`,
@@ -410,8 +474,10 @@ export class PaymentsService {
       .digest('hex');
 
     // Auto-detect sandbox vs live using OPay's key prefix ('OPAYPRV' = sandbox usually)
-    const isSandbox = this.opayPrivateKey.startsWith('OPAYPRV') || !this.opayPrivateKey.startsWith('OPAYLIVE');
-    const apiUrl = isSandbox 
+    const isSandbox =
+      this.opayPrivateKey.startsWith('OPAYPRV') ||
+      !this.opayPrivateKey.startsWith('OPAYLIVE');
+    const apiUrl = isSandbox
       ? 'https://testapi.opaycheckout.com/api/v3/cashier/initialize'
       : 'https://cashierapi.opayweb.com/api/v3/cashier/initialize';
 
@@ -431,13 +497,16 @@ export class PaymentsService {
       this.logger.debug(`OPay response: ${JSON.stringify(data)}`);
     } catch (fetchErr) {
       this.logger.error('OPay network error', fetchErr);
-      throw new InternalServerErrorException('Could not reach OPay — please try again or choose a different payment method');
+      throw new InternalServerErrorException(
+        'Could not reach OPay — please try again or choose a different payment method',
+      );
     }
 
     if (!data.data?.cashierUrl) {
       this.logger.error('OPay cashier initialization failed', data);
       throw new BadRequestException(
-        data.message || `OPay initialization failed (code: ${data.code || 'unknown'})`,
+        data.message ||
+          `OPay initialization failed (code: ${data.code || 'unknown'})`,
       );
     }
 
@@ -457,7 +526,11 @@ export class PaymentsService {
     });
 
     this.logger.log(`OPay cashier URL generated for order ${order.id}`);
-    return { success: true, cashierUrl: data.data.cashierUrl, reference: idempotencyKey };
+    return {
+      success: true,
+      cashierUrl: data.data.cashierUrl,
+      reference: idempotencyKey,
+    };
   }
 
   // ─── Payment Status (for polling) ─────────────────────────────────────────
@@ -488,8 +561,14 @@ export class PaymentsService {
 
     setTimeout(async () => {
       try {
-        await this.ordersService.updateStatus(orderId, OrderStatus.CONFIRMED, PaymentStatus.PAID);
-        this.logger.debug(`[DEV] Simulated payment confirmed for order ${orderId}`);
+        await this.ordersService.updateStatus(
+          orderId,
+          OrderStatus.CONFIRMED,
+          PaymentStatus.PAID,
+        );
+        this.logger.debug(
+          `[DEV] Simulated payment confirmed for order ${orderId}`,
+        );
       } catch (e) {
         this.logger.error('[DEV] Simulation failed', e);
       }
