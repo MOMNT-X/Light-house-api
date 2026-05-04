@@ -10,6 +10,7 @@ export declare class AuthService {
     private configService;
     private prisma;
     private mailService;
+    private readonly logger;
     constructor(usersService: UsersService, jwtService: JwtService, configService: ConfigService, prisma: PrismaService, mailService: MailService);
     signup(signupDto: SignupDto): Promise<{
         accessToken: string;

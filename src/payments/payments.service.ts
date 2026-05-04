@@ -245,13 +245,7 @@ export class PaymentsService {
     //    CONFIRMED → PREPARING (2min) → READY_FOR_DISPATCH (5min) → OUT_FOR_DELIVERY (15min) → DELIVERED (20min)
     this.ordersService.scheduleOrderProgression(order.id);
 
-    // 10. Send in-app notification
-    await this.notificationsService.sendInAppNotification(
-      order.userId,
-      'Payment Successful 🎉',
-      `Your order #${order.id.substring(0, 8).toUpperCase()} has been confirmed.`,
-    );
-
+    // 10. Prepare notification data
     const itemsList = order.items
       .map(
         (i: any) =>
@@ -268,39 +262,59 @@ export class PaymentsService {
       select: { email: true, firstName: true, phone: true },
     });
 
+    const notificationPromises = [];
+
+    // In-app notification
+    notificationPromises.push(
+      this.notificationsService.sendInAppNotification(
+        order.userId,
+        'Payment Successful 🎉',
+        `Your order #${order.id.substring(0, 8).toUpperCase()} has been confirmed.`,
+      ).catch(err => this.logger.error('Failed to send in-app notification', err))
+    );
+
+    // Email notification
     if (user?.email) {
-      await this.mailService.sendOrderConfirmationEmail(user.email, {
-        ...order,
-        userFirstName: user.firstName,
-        addressStr,
-      });
+      notificationPromises.push(
+        this.mailService.sendOrderConfirmationEmail(user.email, {
+          ...order,
+          userFirstName: user.firstName,
+          addressStr,
+        }).catch(err => this.logger.error('Failed to send confirmation email', err))
+      );
     }
 
-    await this.notificationsService.sendDiscordNotification('', [
-      {
-        title: '🎉 New Order Confirmed',
-        description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been successfully paid.`,
-        color: 0x10b981,
-        fields: [
-          {
-            name: 'Amount',
-            value: `₦${(order.total / 100).toFixed(2)}`,
-            inline: true,
-          },
-          { name: 'Provider', value: 'Paystack', inline: true },
-          { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
-          {
-            name: 'Items',
-            value: itemsList || 'No items listed',
-            inline: false,
-          },
-          { name: 'Delivery Address', value: addressStr, inline: false },
-          { name: 'User ID', value: userId, inline: true },
-          { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
-        ],
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    // Discord notification
+    notificationPromises.push(
+      this.notificationsService.sendDiscordNotification('', [
+        {
+          title: '🎉 New Order Confirmed',
+          description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been successfully paid.`,
+          color: 0x10b981,
+          fields: [
+            {
+              name: 'Amount',
+              value: `₦${(order.total / 100).toFixed(2)}`,
+              inline: true,
+            },
+            { name: 'Provider', value: 'Paystack', inline: true },
+            { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
+            {
+              name: 'Items',
+              value: itemsList || 'No items listed',
+              inline: false,
+            },
+            { name: 'Delivery Address', value: addressStr, inline: false },
+            { name: 'User ID', value: userId, inline: true },
+            { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
+          ],
+          timestamp: new Date().toISOString(),
+        },
+      ]).catch(err => this.logger.error('Failed to send Discord notification', err))
+    );
+
+    // Execute all notifications in parallel without awaiting them to block the response
+    Promise.allSettled(notificationPromises);
 
     this.logger.log(`Payment verified and order ${order.id} confirmed`);
     return { success: true, orderId: order.id };

@@ -105,14 +105,7 @@ export class WebhooksService {
         // Kick off automatic status progression
         this.ordersService.scheduleOrderProgression(order.id);
 
-        // Send in-app notification
-        await this.notificationsService.sendInAppNotification(
-          order.userId,
-          'Payment Successful 🎉',
-          `Your order #${order.id.substring(0, 8).toUpperCase()} has been confirmed.`,
-        );
-
-        // Send Discord notification
+        // Prepare notification data
         const itemsList = order.items
           .map((i: any) => `${i.quantity}x ${i.name} (₦${(i.price / 100).toLocaleString()})`)
           .join('\n');
@@ -126,31 +119,51 @@ export class WebhooksService {
           select: { email: true, firstName: true, phone: true },
         });
 
+        const notificationPromises = [];
+
+        // In-app notification
+        notificationPromises.push(
+          this.notificationsService.sendInAppNotification(
+            order.userId,
+            'Payment Successful 🎉',
+            `Your order #${order.id.substring(0, 8).toUpperCase()} has been confirmed.`,
+          ).catch(err => this.logger.error('Failed to send in-app notification', err))
+        );
+
+        // Email notification
         if (user?.email) {
-          await this.mailService.sendOrderConfirmationEmail(user.email, {
-            ...order,
-            userFirstName: user.firstName,
-            addressStr,
-          });
+          notificationPromises.push(
+            this.mailService.sendOrderConfirmationEmail(user.email, {
+              ...order,
+              userFirstName: user.firstName,
+              addressStr,
+            }).catch(err => this.logger.error('Failed to send confirmation email', err))
+          );
         }
 
-        await this.notificationsService.sendDiscordNotification('', [
-          {
-            title: '🎉 New Order Confirmed (Webhook)',
-            description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been successfully paid.`,
-            color: 0x10B981,
-            fields: [
-              { name: 'Amount', value: `₦${(order.total / 100).toFixed(2)}`, inline: true },
-              { name: 'Provider', value: 'Paystack Webhook', inline: true },
-              { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
-              { name: 'Items', value: itemsList || 'No items listed', inline: false },
-              { name: 'Delivery Address', value: addressStr, inline: false },
-              { name: 'User ID', value: order.userId, inline: true },
-              { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
-            ],
-            timestamp: new Date().toISOString(),
-          }
-        ]);
+        // Discord notification
+        notificationPromises.push(
+          this.notificationsService.sendDiscordNotification('', [
+            {
+              title: '🎉 New Order Confirmed (Webhook)',
+              description: `Order **#${order.id.substring(0, 8).toUpperCase()}** from **${order.vendor?.name}** has been successfully paid.`,
+              color: 0x10B981,
+              fields: [
+                { name: 'Amount', value: `₦${(order.total / 100).toFixed(2)}`, inline: true },
+                { name: 'Provider', value: 'Paystack Webhook', inline: true },
+                { name: 'Vendor', value: order.vendor?.name || 'N/A', inline: false },
+                { name: 'Items', value: itemsList || 'No items listed', inline: false },
+                { name: 'Delivery Address', value: addressStr, inline: false },
+                { name: 'User ID', value: order.userId, inline: true },
+                { name: 'User Phone', value: user?.phone || 'N/A', inline: true },
+              ],
+              timestamp: new Date().toISOString(),
+            }
+          ]).catch(err => this.logger.error('Failed to send Discord notification', err))
+        );
+
+        // Execute all in parallel without blocking webhook response
+        Promise.allSettled(notificationPromises);
 
         // Mark webhook as processed
         await this.prisma.webhookEvent.update({

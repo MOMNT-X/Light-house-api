@@ -41,6 +41,7 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var AuthService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
@@ -52,12 +53,13 @@ const mail_service_1 = require("../mail/mail.service");
 const bcrypt = __importStar(require("bcrypt"));
 const crypto = __importStar(require("crypto"));
 const client_1 = require("@prisma/client");
-let AuthService = class AuthService {
+let AuthService = AuthService_1 = class AuthService {
     usersService;
     jwtService;
     configService;
     prisma;
     mailService;
+    logger = new common_1.Logger(AuthService_1.name);
     constructor(usersService, jwtService, configService, prisma, mailService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
@@ -127,9 +129,12 @@ let AuthService = class AuthService {
         return tokens;
     }
     async forgotPassword(email) {
+        this.logger.log(`Password reset request for: ${email}`);
         const user = await this.usersService.findByEmail(email);
-        if (!user)
+        if (!user) {
+            this.logger.warn(`Password reset requested for non-existent email: ${email}`);
             return;
+        }
         const token = crypto.randomBytes(32).toString('hex');
         const tokenHash = await bcrypt.hash(token, 10);
         const expires = new Date();
@@ -222,7 +227,7 @@ let AuthService = class AuthService {
     }
 };
 exports.AuthService = AuthService;
-exports.AuthService = AuthService = __decorate([
+exports.AuthService = AuthService = AuthService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService,

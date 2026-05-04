@@ -62,10 +62,14 @@ let MailService = MailService_1 = class MailService {
                 user: this.configService.get('SMTP_USER'),
                 pass: this.configService.get('SMTP_PASS'),
             },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
         });
     }
     async sendPasswordResetEmail(to, resetLink) {
-        const fromEmail = this.configService.get('EMAIL_FROM') || `\"Bogaad\" <${this.configService.get('SMTP_USER')}>`;
+        const fromEmail = this.configService.get('EMAIL_FROM') || `"Bogaad" <${this.configService.get('SMTP_USER')}>`;
+        this.logger.debug(`Sending reset email from: ${fromEmail} to: ${to}`);
         const mailOptions = {
             from: fromEmail,
             to,
