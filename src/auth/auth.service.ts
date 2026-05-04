@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -16,6 +17,8 @@ import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -107,8 +110,12 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
+    this.logger.log(`Password reset request for: ${email}`);
     const user = await this.usersService.findByEmail(email);
-    if (!user) return; // We fail silently to prevent email enumeration
+    if (!user) {
+      this.logger.warn(`Password reset requested for non-existent email: ${email}`);
+      return; 
+    }
 
     // Generate token
     const token = crypto.randomBytes(32).toString('hex');
