@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var AuthController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
@@ -21,9 +22,10 @@ const auth_dto_1 = require("./dto/auth.dto");
 const public_decorator_1 = require("../common/decorators/public.decorator");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
-let AuthController = class AuthController {
+let AuthController = AuthController_1 = class AuthController {
     authService;
     configService;
+    logger = new common_1.Logger(AuthController_1.name);
     constructor(authService, configService) {
         this.authService = authService;
         this.configService = configService;
@@ -52,9 +54,10 @@ let AuthController = class AuthController {
     }
     async login(loginDto, res) {
         const { user, accessToken, refreshToken } = await this.authService.login(loginDto);
+        this.logger.log(`User ${user.email} logged in. Setting refresh cookie.`);
         res.cookie('refresh_token', refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true,
             sameSite: 'none',
             maxAge: this.getCookieMaxAge(),
         });
@@ -71,18 +74,23 @@ let AuthController = class AuthController {
     }
     async refresh(req, res) {
         const rfToken = req.cookies?.['refresh_token'];
+        this.logger.debug(`Refresh attempt. Cookie present: ${!!rfToken}`);
         if (!rfToken) {
+            this.logger.warn(`No refresh token cookie found. Received cookies: ${JSON.stringify(req.cookies)}`);
             throw new common_1.UnauthorizedException('No refresh token');
         }
         try {
             const base64Url = rfToken.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            const jsonPayload = decodeURIComponent(atob(base64)
+                .split('')
+                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join(''));
             const sub = JSON.parse(jsonPayload).sub;
             const { accessToken, refreshToken } = await this.authService.refreshTokens(sub, rfToken);
             res.cookie('refresh_token', refreshToken, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: true,
                 sameSite: 'none',
                 maxAge: this.getCookieMaxAge(),
             });
@@ -99,7 +107,9 @@ let AuthController = class AuthController {
     }
     async forgotPassword(email) {
         await this.authService.forgotPassword(email);
-        return { message: 'If an account exists, a password reset email has been sent.' };
+        return {
+            message: 'If an account exists, a password reset email has been sent.',
+        };
     }
     async resetPassword(body) {
         const { email, token, newPassword } = body;
@@ -107,7 +117,9 @@ let AuthController = class AuthController {
             throw new common_1.UnauthorizedException('Missing required fields for reset');
         }
         await this.authService.resetPassword(email, token, newPassword);
-        return { message: 'Password has been successfully reset. You can now login.' };
+        return {
+            message: 'Password has been successfully reset. You can now login.',
+        };
     }
 };
 exports.AuthController = AuthController;
@@ -173,7 +185,7 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "resetPassword", null);
-exports.AuthController = AuthController = __decorate([
+exports.AuthController = AuthController = AuthController_1 = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
         config_1.ConfigService])
