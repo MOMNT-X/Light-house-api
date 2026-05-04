@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 export declare class AuthController {
     private readonly authService;
     private readonly configService;
+    private readonly logger;
     constructor(authService: AuthService, configService: ConfigService);
     private getCookieMaxAge;
     signup(signupDto: SignupDto, res: Response): Promise<{

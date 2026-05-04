@@ -173,10 +173,12 @@ let AuthService = class AuthService {
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
                 secret: this.configService.get('JWT_SECRET'),
-                expiresIn: (this.configService.get('JWT_EXPIRES_IN') || '12h'),
+                expiresIn: (this.configService.get('JWT_EXPIRES_IN') ||
+                    '12h'),
             }),
             this.jwtService.signAsync(payload, {
-                secret: this.configService.get('JWT_REFRESH_SECRET') || this.configService.get('REFRESH_TOKEN_SECRET'),
+                secret: this.configService.get('JWT_REFRESH_SECRET') ||
+                    this.configService.get('REFRESH_TOKEN_SECRET'),
                 expiresIn: (this.configService.get('REFRESH_TOKEN_EXPIRES_IN') || '3d'),
             }),
         ]);
@@ -207,7 +209,7 @@ let AuthService = class AuthService {
         if (sessions.length >= MAX_SESSIONS) {
             const toDelete = sessions.slice(0, sessions.length - MAX_SESSIONS + 1);
             await this.prisma.userSession.deleteMany({
-                where: { id: { in: toDelete.map(s => s.id) } },
+                where: { id: { in: toDelete.map((s) => s.id) } },
             });
         }
         await this.prisma.userSession.create({
