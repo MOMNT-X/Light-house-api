@@ -42,7 +42,7 @@ export class PaymentsService {
   }
 
   private get frontendUrl(): string {
-    return this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    return this.configService.get<string>('FRONTEND_URL') || 'https://bogaad.site';
   }
 
   // ─── Initialize Payment ────────────────────────────────────────────────────

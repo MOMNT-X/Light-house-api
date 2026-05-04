@@ -46,7 +46,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         return this.configService.get('OPAY_PUBLIC_KEY') || '';
     }
     get frontendUrl() {
-        return this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+        return this.configService.get('FRONTEND_URL') || 'https://bogaad.site';
     }
     async initiatePayment(userId, orderId, idempotencyKey) {
         const order = await this.ordersService.findOne(userId, orderId);
@@ -304,7 +304,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             throw new common_1.BadRequestException('OPay payment is not available at this time');
         }
         const crypto = await import('crypto');
-        const amountInNaira = (order.total / 100).toFixed(2);
+        const amountInNaira = (order.total).toFixed(2);
         const payload = {
             reference: idempotencyKey,
             mchShortName: 'LH Logistics',

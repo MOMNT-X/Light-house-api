@@ -17,7 +17,7 @@ async function bootstrap() {
     app.use((0, helmet_1.default)());
     app.use((0, cookie_parser_1.default)());
     app.enableCors({
-        origin: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(','),
+        origin: (process.env.ALLOWED_ORIGINS || 'https://bogaad.site').split(','),
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
